@@ -1,0 +1,124 @@
+NOTICE >
+2: nickname, text
+same as PRIVMSG but without replies, only from server to client
+
+NICK <
+1: nickname
+set the user's nickname
+-
+431 ERR_NONICKNAMEGIVEN
+432 ERR_ERRONEUSNICKNAME
+433 ERR_NICKNAMEINUSE
+436 ERR_NICKCOLLISION
+
+USER <
+4: username, hostname, servername, realname
+give user information
+-
+461 ERR_NEEDMOREPARAMS
+462 ERR_ALREADYREGISTRED
+
+PASS <
+1: password
+give a connection password
+-
+461 ERR_NEEDMOREPARAMS
+462 ERR_ALREADYREGISTRED
+
+MODE <> ????
+2: nickname, {[+|-]i|s|o}
+modifie users of smth
+-
+461 ERR_NEEDMOREPARAMS
+(472 ERR_UNKNOWNMODE)
+
+KICK <
+2: channel, user, [comments]
+kick the user out of the channel
+the client sending it must be operator on the channel
+-
+461 ERR_NEEDMOREPARAMS
+403 ERR_NOSUCHCHANNEL
+482 ERR_CHANOPRIVSNEEDED
+442 ERR_NOTONCHANNEL
+
+PING <
+PONG >
+
+JOIN <>
+1: channel
+the user joins the channel
+if the channel does not exist, it is created, and the user is it's operator
+-
+461 ERR_NEEDMOREPARAMS
+471 ERR_CHANNELISFULL
+331 RPL_NOTOPIC
+405 ERR_TOOMANYCHANNELS
+
+353 RPL_NAMEREPLY >
+366 RPL_ENDOFNAMES >
+
+324 RPL_CHANNELMODEIS >
+
+WHO <
+0: name
+returns info about users matching name, that are not invisible and not in same channel as client
+-
+352 RPL_WHOREPLY
+315 RPL_ENDOFWHO
+
+368 RPL_ENDOFBANLIST >
+
+PRIVMSG <
+2: receiver, text
+send message to receiver, it can be a group or a user
+-
+411 ERR_NORECIPIENT
+412 ERR_NOTEXTTOSEND
+405 ERR_CANNOTSENDTOCHAN
+
+401 >
+ERR_NOSUCHNICK
+
+(421 >
+ERR_UNKNOWNCOMMAND)
+
+PART <
+1: channel
+the user is removed from the channel
+-
+461 ERR_NEEDMOREPARAMS
+403 ERR_NOSUCHCHANNEL
+422 ERR_NOTONCHANNEL
+
+QUIT <
+1: [quit message]
+the client informs that it wants to quit
+the server must end the session
+(what to do with the quit message ?)
+
+session ending without QUIT must be handled
+
+ERROR > ???
+
+251 RPL_LUSERCLIENT
+"There are <integer> users and <integer> invisible on <integer> servers"
+
+253 RPL_LUSERUNKNOWN [non zero only]
+"<integer> unknown connections"
+
+254 RPL_LUSERCHANNELS [non zero only]
+"<integer> channels formed"
+
+255 RPL_LUSERME
+"I have <integer> clients and 0 servers"
+
+375 RPL_MOTDSTART
+"- <server> message of the day -"
+
+372 RPL_MOTD
+"<text>"
+
+376 RPL_ENDOFMOTD
+"end of motd"
+
