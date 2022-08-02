@@ -43,6 +43,6 @@ int UMODEIS(user &usr, std::string &user_mode_string);
 int	INVITEONLYCHANNEL(user& usr, std::string channel);
 message NAMEREPLY(std::string nickname, std::string channel, std::string user_lst);
 message ENDOFNAMES(std::string nickname, std::string channel);
-int RPL_TOPIC(user& usr, std::string chan, std::string top);
-int RPL_NOTOPIC(user& usr, std::string chan);
+message RPL_TOPIC(user& usr, std::string chan, std::string top);
+message RPL_NOTOPIC(user& usr, std::string chan);
 #endif
