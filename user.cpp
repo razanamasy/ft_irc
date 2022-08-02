@@ -115,7 +115,7 @@ void	user::send_a_message(message& m) const
 
 void	user::send_a_string(const std::string& m) const
 {
-	std::cout << "sending string to '" << _nickname << "':" << m;
+//	std::cout << "sending string to '" << _nickname << "':" << m;
 	send(fd_user, m.c_str(), m.length(), 0);
 }
 

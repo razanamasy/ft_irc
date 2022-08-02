@@ -27,7 +27,7 @@ void ft_bzero(char * ptr, int len)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 4)
+    if (argc != 3)
     {
         std::cout << "Error nb arguments" <<std::endl;
         return (1);

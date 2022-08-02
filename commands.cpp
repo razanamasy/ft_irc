@@ -22,7 +22,7 @@ std::vector<std::string>	split_comma(std::string	buff)
 //PASS
 int	server::pass_cmd(user& usr, std::list<std::string> list_param)
 {
-	extern fd_set set;
+	//extern fd_set set;
 	std::list<user>::const_iterator	_b = _users.begin();
 	std::list<user>::const_iterator	_e = _users.end();
 
@@ -265,39 +265,34 @@ int	server::ping_cmd(user& usr)
 }
 
 //JOIN
-int	server::join_each_channel(user& usr, std::string chan_name)
+void	server::create_channel(user& usr, std::string chan_name, std::list<std::string> list_param, chan_iterator& chan)
 {
-	std::list<std::string> list_param(1, chan_name);
-	chan_name = to_lower_string(chan_name);
-	if (chan_name.empty())
-		return 1;
-	if (chan_name[0] != '#')
-		return BADCHANMASK(usr, chan_name);
-	if (!usr.can_join_a_channel())
-		return TOOMANYCHANNELS(usr, chan_name);
-	chan_iterator	chan;
-	if (!this->channel_exists(chan_name) && (nbr_of_channels < MAX_CHANNEL))
-	{
-		channel	new_chan(chan_name, &usr);
-		this->add_channel(new_chan);
-		chan = search_channel(chan_name);
-		usr.add_a_chan(&(*chan));
-		mode_cmd(usr, list_param);
-	}
-	else
-	{
-		chan = search_channel(chan_name);
-		if (chan == _channels.end())
-			return NOSUCHCHANNEL(usr, chan_name);
-		if ((*chan).is_full())
-			return CHANNELISFULL(usr, chan_name);
-		if ((*chan).is_invite_only() && !(*chan).is_invited(&usr))
-			return INVITEONLYCHANNEL(usr, chan_name);
-		(*chan).add_user(usr);
-	}
-	message	m(usr.to_prefix(), "JOIN");
+	channel	new_chan(chan_name, &usr);
+	this->add_channel(new_chan);
+	chan = search_channel(chan_name);
+	usr.add_a_chan(&(*chan));
+	mode_cmd(usr, list_param);
+}
+
+int	server::fill_channel(user& usr, std::string chan_name, chan_iterator& chan)
+{
+	chan = search_channel(chan_name);
+	if (chan == _channels.end())
+		return NOSUCHCHANNEL(usr, chan_name);
+	if ((*chan).is_full())
+		return CHANNELISFULL(usr, chan_name);
+	if ((*chan).is_invite_only() && !(*chan).is_invited(&usr))
+		return INVITEONLYCHANNEL(usr, chan_name);
+	(*chan).add_user(usr);
+	return (0);
+}
+
+void	server::set_up_messages(message& m, std::string chan_name, chan_iterator& chan, user& usr)
+{
+	//set message for current user
 	m.add_params(chan_name);
 	usr.add_to_buffer(m);
+
 	std::string	nicks;
 	channel::user_iterator	b = (*chan).users().begin();
 	channel::user_iterator	e = (*chan).users().end();
@@ -309,6 +304,8 @@ int	server::join_each_channel(user& usr, std::string chan_name)
 		nicks += (*b)->nickname();
 		b++;
 	}
+
+	//set message to send to all user of the channel
 	if (((*chan).topic()).empty())
 	{
 		usr.add_to_buffer(RPL_NOTOPIC(usr, (*chan).name()));
@@ -319,8 +316,32 @@ int	server::join_each_channel(user& usr, std::string chan_name)
 	}
 	usr.add_to_buffer(NAMEREPLY(usr.nickname(), (*chan).name(), nicks));
 	usr.add_to_buffer(ENDOFNAMES(usr.nickname(), (*chan).name()));
+}
 
+
+
+int	server::join_each_channel(user& usr, std::string chan_name)
+{
+	std::list<std::string> list_param(1, chan_name);
+	chan_name = to_lower_string(chan_name);
+	if (chan_name.empty())
+		return 1;
+	if (chan_name[0] != '#')
+		return BADCHANMASK(usr, chan_name);
+	if (!usr.can_join_a_channel())
+		return TOOMANYCHANNELS(usr, chan_name);
+	chan_iterator	chan;
+	//ADD or fill the chan
+	if (!this->channel_exists(chan_name) && (nbr_of_channels < MAX_CHANNEL))
+		create_channel(usr, chan_name, list_param, chan);
+	else
+		fill_channel(usr, chan_name, chan);
+	//set up messages
+	message	m(usr.to_prefix(), "JOIN");
+	set_up_messages(m, chan_name, chan, usr);
+	//Message sent from user
 	usr.send_buffer();
+	//Message sent from channel
 	(*chan).send_a_message(m, usr);
 	return 0;
 }
