@@ -306,7 +306,7 @@ int	server::manage(int fd, message msg)
 			if (uncorrect_params(*usr, msg, 4))
 				return 0;
 			user_cmd(*usr, msg.params());
-			break;
+			break ;
 		case 3:
 			mode_cmd(*usr, msg.params());
 			break ;
@@ -319,25 +319,25 @@ int	server::manage(int fd, message msg)
 			if (uncorrect_params(*usr, msg, 1))
 				return 0;
 			join_cmd(*usr, msg.params());
-			break;
+			break ;
 		case 6:
 			if (uncorrect_params(*usr, msg, 2))
 				return 0;
 			kick_cmd(*usr, msg.params());
-			break;
+			break ;
 		case 7:
 			if (uncorrect_params(*usr, msg, 1))
 				return 0;
 			who_cmd(*usr, msg.params());
-			break;
+			break ;
 		case 8:
 			privmsg_cmd(*usr, msg.params(), "PRIVMSG");
-			break;
+			break ;
 		case 9:
 			if (uncorrect_params(*usr, msg, 1))
 				return 0;
 			part_cmd(*usr, msg.params());
-			break;
+			break ;
 		case 10:
 			if (uncorrect_params(*usr, msg, 0))
 				return 0;
@@ -345,16 +345,17 @@ int	server::manage(int fd, message msg)
 			break ;
 		case 11:
 			privmsg_cmd(*usr, msg.params(), "NOTICE");
-			break;
+			break ;
 		case 12:
 			if (uncorrect_params(*usr, msg, 1))
 				return 0;
 			topic_cmd(*usr, msg.params());
+			break ;
 		case 13:
 			if (uncorrect_params(*usr, msg, 2))
 				return 0;
 			invite_cmd(*usr, msg.params());
-			break;
+			break ;
 	}
 	return 0;
 }

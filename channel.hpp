@@ -52,6 +52,7 @@ class channel
 		void	add_to_invite_list(user* usr);
 		bool	is_invited(user* usr);
 		void	remove_from_invite_list(user* usr);
+		void	settopic(std::string top);
 
 		// MESSAGE
 		

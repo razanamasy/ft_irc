@@ -1,23 +1,21 @@
 # include "replies.hpp"
 
-int RPL_TOPIC(user& usr, std::string chan, std::string top)
+message RPL_TOPIC(user& usr, std::string chan, std::string top)
 {
 	message m("irc.local", "332");
 	m.add_params(usr.nickname());
 	m.add_params(chan);
 	m.add_params(top);
-	usr.send_a_message(m);
-	return (0);
+	return m;
 }
 
-int RPL_NOTOPIC(user& usr, std::string chan)
+message RPL_NOTOPIC(user& usr, std::string chan)
 {
 	message m("irc.local", "331");
 	m.add_params(usr.nickname());
 	m.add_params(chan);
 	m.add_params("No topic is set");
-	usr.send_a_message(m);
-	return (0);
+	return m;
 }
 
 int	NOTREGISTERED(user& usr, std::string command)

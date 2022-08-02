@@ -97,7 +97,7 @@ int	server::nick_cmd(user& usr, std::list<std::string> list_param)
 int server::topic_cmd(user &usr, std::list<std::string> list_param)
 {
 	server::chan_iterator chan = this->search_channel(at(list_param, 0));
-
+	message m;
 	if (chan == (this->_channels).end())
 	{
 		NOSUCHCHANNEL(usr, at(list_param, 0));
@@ -108,12 +108,14 @@ int server::topic_cmd(user &usr, std::list<std::string> list_param)
 	{
 		if ((*chan).topic().empty())
 		{
-			RPL_NOTOPIC(usr, at(list_param, 0));
+			m = RPL_NOTOPIC(usr, at(list_param, 0));
+			usr.send_a_message(m);
 			return (0);
 		}
 		else
 		{
-			RPL_TOPIC(usr, at(list_param, 0), at(list_param, 1));
+			m = RPL_TOPIC(usr, at(list_param, 0), at(list_param, 1));
+			usr.send_a_message(m);
 			return (0);
 		}
 	}
@@ -128,6 +130,7 @@ int server::topic_cmd(user &usr, std::list<std::string> list_param)
 
 	if ((*chan).is_op(usr))
 	{
+		(*chan).settopic(at(list_param, 1));
 		message msg(usr.to_prefix(), "TOPIC");
 		msg.add_params(at(list_param, 0));
 		msg.add_params(at(list_param, 1));
@@ -485,8 +488,17 @@ int	server::join_channel(user& usr, std::string chan_name)
 		nicks += (*b)->nickname();
 		b++;
 	}
+	if (((*chan).topic()).empty())
+	{
+		usr.add_to_buffer(RPL_NOTOPIC(usr, (*chan).name()));
+	}
+	else
+	{
+		usr.add_to_buffer(RPL_TOPIC(usr, (*chan).name(), (*chan).topic()));
+	}
 	usr.add_to_buffer(NAMEREPLY(usr.nickname(), (*chan).name(), nicks));
 	usr.add_to_buffer(ENDOFNAMES(usr.nickname(), (*chan).name()));
+
 	usr.send_buffer();
 	(*chan).send_a_message(m, usr);
 	return 0;
@@ -511,93 +523,38 @@ int	server::join_channel(user& usr, std::string chan_name)
 int	server::who_cmd(user& usr, std::list<std::string> list_param)
 {
 	std::string	cible = list_param.front();
-	//WHO IS THE CIBLE # = forcement CHANNEL
-	//Channel simple (non pointer)
-	std::list<channel>::iterator	_bch = this->_channels.begin();
-	std::list<channel>::iterator	_ech = this->_channels.end();
+
 	if (cible[0] == '#')
 	{
-		if (cible.size() == 1)
-		{
+		chan_iterator bch = search_channel(cible);
 
-			usr.add_to_buffer(ENDOFWHO(usr, usr.username()));
-			usr.send_buffer();
-			return (0);
-		}
-		for (; _bch != _ech; _bch++)
+		if (bch !=  this->_channels.end() && (*bch).is_user_in_channel(usr) && cible.size() != 1)
 		{
-			//ET QUE JE SUIS DANS LE CHANNEL
-			if ((cible == (*_bch).name()) && (*_bch).is_user_in_channel(usr) )
+			std::list<user*>::const_iterator	_bu = ((*bch).users()).begin();
+			std::list<user*>::const_iterator	_eu = ((*bch).users()).end();
+
+			for (; _bu != _eu; _bu++)
 			{
-					//Dans user pointer sur user iterateur sur pointer sur user
-					std::list<user*>::const_iterator	_bu = ((*_bch).users()).begin();
-					std::list<user*>::const_iterator	_eu = ((*_bch).users()).end();
-					message msg;
-					for (; _bu != _eu; _bu++)
-					{
-						//* blabla    H   0  hinaraza@172.17.0.1 [Hina Razanamasy]
-						if ((*_bch).is_op(**_bu))
-						{
-							usr.add_to_buffer(WHOREPLY(	usr, cible,
-														(*_bu)->username(),
-														(*_bu)->hostname(),
-														(*_bu)->servername(),
-														(*_bu)->nickname(),
-														(*_bu)->realname(), 1)	);
-						}
-						else
-						{
-							usr.add_to_buffer(WHOREPLY(	usr, cible,
-														(*_bu)->username(),
-														(*_bu)->hostname(),
-														(*_bu)->servername(), 
-														(*_bu)->nickname(),
-														(*_bu)->realname(), 0)	);
-						}
-					}
-					usr.add_to_buffer(ENDOFWHO(usr, usr.username()));
-					usr.send_buffer();
-					return (0);
+				usr.add_to_buffer(WHOREPLY(	usr, cible,(*_bu)->username(),(*_bu)->hostname(),(*_bu)->servername(),(*_bu)->nickname(),(*_bu)->realname(), (*bch).is_op(**_bu)));
 			}
 		}
+		usr.add_to_buffer(ENDOFWHO(usr, usr.username()));
+		usr.send_buffer();
+		return (0);
 	}
-	//user dans server = list de user simple iterator sur user simple (pas pointer)
-	std::list<user>::const_iterator	_b_serv_u = this->_users.begin();
-	std::list<user>::const_iterator	_e_serv_u = this->_users.end();
 
-	for (; _b_serv_u != _e_serv_u; _b_serv_u++)
+	user_iterator serv_u = search_user(cible);
+
+	if (serv_u != this->_users.end())
 	{
-		if (cible == (*_b_serv_u).nickname())
-		{
-			if ((*_b_serv_u).get_in_channels() > 0)
-			{
+		channel* last_chan_ptr = (*serv_u).get_last_channel();
 
-				channel* last_chan_ptr = (*_b_serv_u).get_last_channel();
-				channel	last_chan = *last_chan_ptr;
-				std::string	chan_name = last_chan.name();
-
-				if (last_chan_ptr && last_chan.is_op((*_b_serv_u)))
-					usr.add_to_buffer(WHOREPLY(	usr, chan_name,
-												(*_b_serv_u).username(), 
-												(*_b_serv_u).hostname(),
-												(*_b_serv_u).servername(), 
-												(*_b_serv_u).nickname(), 
-												(*_b_serv_u).realname(), 1)	);
-				else
-					usr.add_to_buffer(WHOREPLY(	usr, chan_name, (*_b_serv_u).username(),
-												(*_b_serv_u).hostname(),
-												(*_b_serv_u).servername(),
-												(*_b_serv_u).nickname(),
-												(*_b_serv_u).realname(), 0)	);
-			}
-			else
-				usr.add_to_buffer(WHOREPLY(		usr, "*", (*_b_serv_u).username(), 
-												(*_b_serv_u).hostname(),
-												(*_b_serv_u).servername(), 
-												(*_b_serv_u).nickname(),
-												(*_b_serv_u).realname(), 0)	);
-		}
+		if (last_chan_ptr != NULL)
+			usr.add_to_buffer(WHOREPLY(	usr, (*last_chan_ptr).name(), (*serv_u).username(), (*serv_u).hostname(), (*serv_u).servername(), (*serv_u).nickname(), (*serv_u).realname(), last_chan_ptr && (*last_chan_ptr).is_op((*serv_u))));
+		else
+			usr.add_to_buffer(WHOREPLY(	usr, "*", (*serv_u).username(), (*serv_u).hostname(), (*serv_u).servername(), (*serv_u).nickname(), (*serv_u).realname(), last_chan_ptr && (*last_chan_ptr).is_op((*serv_u))));
 	}
+
 	usr.add_to_buffer(ENDOFWHO(usr, usr.username()));
 	usr.send_buffer();
 	return (0);

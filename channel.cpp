@@ -21,6 +21,12 @@ std::string channel::topic()
 	return (this->_topic);
 }
 
+void channel::settopic(std::string top)
+{
+	this->_topic = top;
+	return ;
+}
+
 std::string&			channel::name()	{ 
 		return _name; 
 }

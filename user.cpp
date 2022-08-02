@@ -23,7 +23,13 @@ std::string	user::realname() const	{ return _realname; };
 std::string	user::servername() const	{ return _servername; };
 int		user::getfd() const	{ return fd_user; };
 int		user::get_in_channels() const { return in_channels; };
-channel*		user::get_last_channel() const { return _channel.back(); };
+
+channel*		user::get_last_channel() const 
+{
+	if (this->_channel.empty())
+		return (NULL); 
+	return _channel.back();
+};
 
 std::list<channel*>&	user::get_channels()
 { return _channel; }
@@ -84,8 +90,7 @@ void	user::pass() { passed = true; }
 
 user::~user()
 {
-	//this->disconnect();
-	//close(*(this->fd_user));
+
 }
 
 void	user::add_to_buffer(message msg)
