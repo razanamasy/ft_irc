@@ -22,7 +22,6 @@ std::vector<std::string>	split_comma(std::string	buff)
 //PASS
 int	server::pass_cmd(user& usr, std::list<std::string> list_param)
 {
-	extern fd_set set;
 	std::list<user>::const_iterator	_b = _users.begin();
 	std::list<user>::const_iterator	_e = _users.end();
 
@@ -116,7 +115,6 @@ int server::topic_cmd(user &usr, std::list<std::string> list_param)
 	{
 		CHANOPRIVSNEEDED(usr, at(list_param, 0));
 	}
-
 	return (0);
 }
 
@@ -419,7 +417,13 @@ void	server::msg_each_receivers(user& sender, std::vector<std::string>::iterator
 int	server::privmsg_cmd(user& sender, std::list<std::string> list_param, std::string cmd_name) 
 {
 	if (list_param.size() < 2)
-		return NORECIPIENT(sender, std::string(cmd_name));
+		return NEEDMOREPARAMS(sender, std::string(cmd_name));
+
+	if (list_param.size() == 2 && at(list_param, 1).empty())
+	{
+		return (ERR_NOTEXTTOSEND(sender));
+	}
+	
 	std::string	buff = list_param.front();
 
 	std::vector<std::string> list_receivers = split_comma(buff);

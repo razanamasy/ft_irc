@@ -38,6 +38,10 @@ class	server
 		typedef std::list<user>::iterator	user_iterator;
 
 		int		ini_server(int port);
+		int     problem_on_client(int fdcur);
+		int		parcing_manage_request(int fdcur);
+		int		new_connection();
+		int 	request_from_client(int fdcur);
 		int		listen_all_socks();
 		bool	uncorrect_param(std::string str);
 		int		manage(int fd, message msg);
