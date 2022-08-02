@@ -2,35 +2,24 @@
 #include <vector>
 #include "server.hpp"
 
-///////////////////////
-// COMMANDS TO PARSE //
-///////////////////////
-
-/* PASS
- * 1: <password>
- *
- * The PASS command is used to set a 'connection password'.  The
- * password can and must be set before any attempt to register the
- * connection is made.  Currently this requires that clients send a PASS
- * command before sending the NICK/USER combination. The password supplied
- * must match the one supplied at the server's launch. It is possible to send
- * multiple PASS commands before registering but only the last one sent
- * is used for verification and it may not be changed once registered.
- *
- * Numeric Replies:
- *
- * ERR_NEEDMOREPARAMS
- * ERR_ALREADYREGISTRED */
-/*
-int ERROR(user &usr, std::string error_message)
+//SPLIT comma for PRIV_MSG PART_CMD ET KICK_CMD AND JOIN
+std::vector<std::string>	split_comma(std::string	buff)
 {
-    message msg("irc.local", "ERROR");
-    msg.add_params("Closing link");
-    msg.add_params(error_message);
-    usr.send_a_message(msg);
-    return (0);
-}*/
+	std::vector<std::string> list_something;
+	size_t c = 0;
+	while ((c = buff.find(",")) != std::string::npos)
+	{
+		if (buff[0] != ',')
+			list_something.push_back(buff.substr(0, c));
+		buff = buff.substr(c + 1);
+		buff.erase(0, buff.find_first_not_of(","));
+	}
+	if (!buff.empty())
+		list_something.push_back(buff);
+	return (list_something);
+}
 
+//PASS
 int	server::pass_cmd(user& usr, std::list<std::string> list_param)
 {
 	extern fd_set set;
@@ -52,22 +41,7 @@ int	server::pass_cmd(user& usr, std::list<std::string> list_param)
 	return (0);
 }
 
-/* NICK
- * 1: <nickname> 
- *
- * NICK message is used to give user a nickname or change the previous
- * one.
- * When a user attempts to set it's nick for the first time with a nick that
- * already exists, an underscore '_' is added at it's end,
- * and RPL_WHOISUSER is sent about who already has the nick.
- * When a user attempts to change it's nick to one that already exists,
- * and ERR_NICKNAMEINUSE is sent.
- *
- * Numeric Replies:
- * ERR_NONICKNAMEGIVEN
- * ERR_NICKNAMEINUSE
- * RPL_WHOISUSER */
-
+//NICK
 int	server::nick_cmd(user& usr, std::list<std::string> list_param)
 {
 	std::string new_nick = at(list_param, 0);
@@ -94,6 +68,7 @@ int	server::nick_cmd(user& usr, std::list<std::string> list_param)
 	return 0;
 }
 
+//TOPIC
 int server::topic_cmd(user &usr, std::list<std::string> list_param)
 {
 	server::chan_iterator chan = this->search_channel(at(list_param, 0));
@@ -145,24 +120,7 @@ int server::topic_cmd(user &usr, std::list<std::string> list_param)
 	return (0);
 }
 
-/* USER
- * 4: <username> <hostname> <servername> <realname>
- *
- * The USER message is used at the beginning of connection to specify
- * the username, hostname, servername and realname of a new user.
- * Note that hostname and servername are normally ignored by the IRC
- * server when the USER command comes from a directly connected client
- * (for security reasons).
- * 
- * It must be noted that realname parameter must be the last parameter,
- * because it may contain space characters and must be prefixed with a
- * colon (':') to make sure this is recognised as such.
- * 
- * Numeric Replies:
- * 
- * ERR_NEEDMOREPARAMS
- * ERR_ALREADYREGISTRED */
-
+//USER
 int	server::user_cmd(user& usr, std::list<std::string> list_param) 
 {
 	extern fd_set set;
@@ -210,30 +168,7 @@ int	server::user_cmd(user& usr, std::list<std::string> list_param)
 	return 0;
 }
 
-/* MODE
- * 2: <nick> +i
- * 1: <channel> [b]
- *
- * The MODE command can be used to change the mode of a channel/user
- * channel:
- * 		without any other parameter, it returns RPL_CHANNELMODEIS
- * 		else it returns RPL_ENDOFBANLIST
- *
- * user:
- * 		turns the users invisible (+i option, cf RFC1450 4.2.3.2)
- *
- * Numeric replies:
- * ERR_NEEDMOREPARAMS
- * ERR_CHANOPRIVSNEEDED
- * ERR_NOSUCHNICK
- * ERR_NOTONCHANNEL
- * ERR_UNKNOWNMODE
- * ERR_NOSUCHCHANNEL
- * ERR_UMODEUNKNOWNFLAG
- * RPL_CHANNELMODEIS
- * RPL_UMODEIS
- * RPL_ENDOFBANLIST */
-
+//MODE
 int	server::mode_cmd(user& usr, std::list<std::string> params)
 {
 	if (params.size() < 1)
@@ -273,177 +208,64 @@ int	server::mode_cmd(user& usr, std::list<std::string> params)
 	return 0;
 }
 
-/* KICK
- * 2: <channel> <user> [<comment>]
- * The KICK command can be  used  to  forcibly  remove  a  user  from  a
- * channel. It  'kicks  them  out'  of the channel (forced PART).
- * Only a channel operator may kick another user out of a  channel.
- * Each  server that  receives  a KICK message checks that it is valid
- * (ie the sender is actually a  channel  operator)  before  removing
- * the  victim  from  the channel.
- * 
- * Numeric Replies:
- * 
- * ERR_NEEDMOREPARAMS
- * ERR_NOSUCHCHANNEL
- * ERR_CHANOPRIVSNEEDED
- * ERR_NOTONCHANNEL */
+
+//KICK
+void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator b, std::list<std::string> list_param)
+{
+	//COEUR DE KICK A SORTIR
+	server::user_iterator asskicked = this->search_user(*b);
+	server::chan_iterator chan		= this->search_channel(at(list_param, 0));
+	if (asskicked == this->_users.end())
+		(NOSUCHNICK(asskicker, *b));
+	else
+	{	
+		if((*chan).is_op(asskicker))
+		{
+			if (!(*chan).is_user_in_channel(*asskicked) )
+				NOTONCHANNEL(*asskicked, (*chan).name());
+			else
+			{
+				message msg((asskicker).to_prefix(), "KICK");
+				msg.add_params((*chan).name());
+				msg.add_params((*asskicked).nickname());
+				if (list_param.size() == 3)
+					msg.add_params(at(list_param, 2));
+				(*asskicked).send_a_message(msg);
+				(*chan).send_a_message(msg, *asskicked);
+				this->pop_user_from_chan(*asskicked, chan);
+			}
+		}
+		else
+			CHANOPRIVSNEEDED(asskicker, (*chan).name());
+	}
+}
 
 int	server::kick_cmd(user& asskicker, std::list<std::string> list_param) 
 {
-
-	///CREATE LIST OF USER
-	std::vector<std::string> list_user;
 	std::string	buff = at(list_param, 1);
-	size_t c = 0;
-	while ((c = buff.find(",")) != std::string::npos)
-	{
-		if (buff[0] != ',')
-			list_user.push_back(buff.substr(0, c));
-		buff = buff.substr(c + 1);
-		buff.erase(0, buff.find_first_not_of(","));
-
-	}
-	if (!buff.empty())
-		list_user.push_back(buff);
+	std::vector<std::string> list_user = split_comma(buff);
 
 	std::vector<std::string>::iterator	b = list_user.begin();
 	std::vector<std::string>::iterator	e = list_user.end();
-
-
-
-
 	for (; b != e; b++)
 	{
-		std::cout << "i'm kicking this bitch : " << *b << std::endl;
-		server::user_iterator asskicked = this->search_user(*b);
-		server::chan_iterator chan		= this->search_channel(at(list_param, 0));
-
-		if (asskicked == this->_users.end())
-			(NOSUCHNICK(asskicker, *b));
-		else
-		{	
-			if((*chan).is_op(asskicker))
-			{
-				if (!(*chan).is_user_in_channel(*asskicked) )
-					NOTONCHANNEL(*asskicked, (*chan).name());
-				else
-				{
-					message msg((asskicker).to_prefix(), "KICK");
-					msg.add_params((*chan).name());
-					msg.add_params((*asskicked).nickname());
-					if (list_param.size() == 3)
-						msg.add_params(at(list_param, 2));
-					(*asskicked).send_a_message(msg);
-					(*chan).send_a_message(msg, *asskicked);
-					this->pop_user_from_chan(*asskicked, chan);
-				}
-			}
-			else
-				CHANOPRIVSNEEDED(asskicker, (*chan).name());
-		}
+		kick_each_user(asskicker, b,list_param);
 	}
 	return (0);
 }
 
-/* PING
- * 1: <server>
- * The PING message is used to test the presence of an active client at
- * the other end of the connection.  A PING message is sent at regular
- * intervals if no other activity detected coming from a connection.  If
- * a connection fails to respond to a PING command within a set amount
- * of time, that connection is closed.
- *
- * Any client which receives a PING message must respond to <server>
- * (server which sent the PING message out) as quickly as possible with
- * an appropriate PONG message to indicate it is still there and alive.
- * Servers should not respond to PING commands but rely on PINGs from
- * the other end of the connection to indicate the connection is alive.
- *
- * Numeric Replies:
- *
- * ERR_NOORIGIN
-	msg.add_params("irc.local");
- * ERR_NOSUCHSERVER */
-
+//PING
 int	server::ping_cmd(user& usr) 
 {
 	message	msg("irc.local", "PONG");
 	msg.command(std::string("PONG"));
-	//msg.add_params("sitio-toaster");
 	msg.add_params("irc.local");
 	usr.send_a_message(msg);
 	return 0;
 }
 
-/* JOIN
- * 1: <channel>
- * The JOIN command is used by client to start listening a specific channel.
- * Once a user has joined a channel, they receive notice about all commands
- * their server receives which affect the channel.
- * This includes MODE, KICK, PART, QUIT and of course PRIVMSG/NOTICE.
- * 
- * Numeric Replies:
- * ERR_NEEDMOREPARAMS
- * ERR_CHANNELISFULL
- * ERR_NOSUCHCHANNEL
- * ERR_TOOMANYCHANNELS
- * RPL_NOTOPIC */
-
-// SPLIT >> IN UTILS FILE
-// JOIN CHANNEL >> NO NEED IN SERVER HEADER?
-
-size_t	count_needles(char needle, std::string haystack)
-{
-	size_t count = 0;
-
-	for (size_t i = 0; (i = haystack.find(needle, i)) != std::string::npos; i++)
-		count++;
-	return count;	
-}	
-
-std::list<std::string>	split(char sep, std::string params_str)
-{
-	size_t index	= 0;
-	size_t len		= 0;
-	std::list<std::string> params_list;
-
-	while (params_str[index] == sep) 
-		index++;
-	while ((len = params_str.find_first_of(sep, index)) != std::string::npos)
-	{
-		if (len != index)
-			params_list.push_back(params_str.substr(index, len - index));
-		
-		index = len;
-		while (params_str[index] == sep)
-			index++;
-	}
-	params_list.push_back(params_str.substr(index));
-	return params_list;
-}
-
-int	server::join_cmd(user& usr, std::list<std::string> list_param)
-{
-	std::string param = list_param.front();
-	std::list<std::string> chans_names;
-
-	if (param.find(',') != std::string::npos)
-	{
-			chans_names = split(',', param);
-			size_t size = chans_names.size();
-			for (size_t i = 0; i < size; i++)
-			{
-				this->join_channel(usr, chans_names.back());
-				chans_names.pop_back();	
-			}
-	}
-	else
-		this->join_channel(usr, param);
-	return 0;
-}
-
-int	server::join_channel(user& usr, std::string chan_name)
+//JOIN
+int	server::join_each_channel(user& usr, std::string chan_name)
 {
 	std::list<std::string> list_param(1, chan_name);
 	chan_name = to_lower_string(chan_name);
@@ -451,7 +273,6 @@ int	server::join_channel(user& usr, std::string chan_name)
 		return 1;
 	if (chan_name[0] != '#')
 		return BADCHANMASK(usr, chan_name);
-		//chan_name = "#" + chan_name;
 	if (!usr.can_join_a_channel())
 		return TOOMANYCHANNELS(usr, chan_name);
 	chan_iterator	chan;
@@ -504,22 +325,21 @@ int	server::join_channel(user& usr, std::string chan_name)
 	return 0;
 }
 
-/* WHO
- * 0: <name>
- * The WHO message is used by a client to generate a query which returns
- * a list of information of the <name> parameter given by
- * the client. In the absence of the <name> parameter, all visible
- * (users who aren't invisible (user mode +i) and who don't have a
- * common channel with the requesting client) are listed.  The same
- * result can be achieved by using a <name> of "0".
- * The <name> passed to WHO is matched against users' host, server, real
- * name and nickname if the channel <name> cannot be found.
- *
- * Numeric Replies:
- * ERR_NOSUCHSERVER
- * RPL_WHOREPLY
- * RPL_ENDOFWHO */
+int	server::join_cmd(user& usr, std::list<std::string> list_param)
+{
+	std::string buff = list_param.front();
+	std::vector<std::string> list_chan = split_comma(buff);
 
+	std::vector<std::string>::iterator	b = list_chan.begin();
+	std::vector<std::string>::iterator	e = list_chan.end();
+	for (; b != e; b++)
+	{
+		this->join_each_channel(usr, *b);
+	}
+	return 0;
+}
+
+//WHO
 int	server::who_cmd(user& usr, std::list<std::string> list_param)
 {
 	std::string	cible = list_param.front();
@@ -560,46 +380,16 @@ int	server::who_cmd(user& usr, std::list<std::string> list_param)
 	return (0);
 }
 
-/* PRIVMSG
- * 2: <receiver> <text to be sent>
- * PRIVMSG is used to send private messages between users.
- * <receiver> is the nickname of the receiver of the message.
- * <receiver> can also be a channel name.
- *
- * Numeric Replies:
- * ERR_NORECIPIENT
- * ERR_CANNOTSENDTOCHAN
- * ERR_NOSUCHNICK
- * ERR_NOTEXTTOSEND */
 
-int	server::privmsg_cmd(user& sender, std::list<std::string> list_param, std::string cmd_name) 
+//PRIVMSG
+void	server::msg_each_receivers(user& sender, std::vector<std::string>::iterator	b, std::list<std::string> list_param, std::string cmd_name)
 {
-	if (list_param.size() < 2)
-		return NORECIPIENT(sender, std::string(cmd_name));
-
-	std::vector<std::string> list_receivers;
-	std::string	buff = list_param.front();
-	size_t c = 0;
-	while ((c = buff.find(",")) != std::string::npos)
-	{
-		if (buff[0] != ',')
-			list_receivers.push_back(buff.substr(0, c));
-		buff = buff.substr(c + 1);
-		buff.erase(0, buff.find_first_not_of(","));
-
-	}
-	if (!buff.empty())
-		list_receivers.push_back(buff);
-
-	std::vector<std::string>::iterator	b = list_receivers.begin();
-	std::vector<std::string>::iterator	e = list_receivers.end();
-	for (; b != e; b++)
-	{
+		//COEUR DE FOR A SORTIR
 		message	m(sender.to_prefix(), cmd_name);
 		m.add_params((*b));
-		 std::list<std::string>::iterator b_param = list_param.begin();
-		 std::list<std::string>::iterator e_param = list_param.end();
-		 b_param++;
+		std::list<std::string>::iterator b_param = list_param.begin();
+		std::list<std::string>::iterator e_param = list_param.end();
+		b_param++;
 		for (; b_param != e_param; b_param++)
 			m.add_params(*b_param);
 
@@ -624,97 +414,77 @@ int	server::privmsg_cmd(user& sender, std::list<std::string> list_param, std::st
 				CANNOTSENDTOCHAN(sender, (*b));
 			(*receiver).send_a_message(m, sender);
 		}
+}
+
+int	server::privmsg_cmd(user& sender, std::list<std::string> list_param, std::string cmd_name) 
+{
+	if (list_param.size() < 2)
+		return NORECIPIENT(sender, std::string(cmd_name));
+	std::string	buff = list_param.front();
+
+	std::vector<std::string> list_receivers = split_comma(buff);
+	std::vector<std::string>::iterator	b = list_receivers.begin();
+	std::vector<std::string>::iterator	e = list_receivers.end();
+	for (; b != e; b++)
+	{
+		msg_each_receivers(sender, b, list_param, cmd_name);
 	}
 	return 0;
 }
 
-/* PART
- * 1: <channel>
- * The PART message causes the client sending the message to be removed
- * from the list of active users for all given channels listed in the
- * parameter string.
- *
- * Numeric Replies:
- *
- * ERR_NEEDMOREPARAMS
- * ERR_NOSUCHCHANNEL
- * ERR_NOTONCHANNEL */
+//PART
+void	server::part_each_channel(user& usr, std::vector<std::string>::iterator	b, std::list<std::string> list_param)
+{
+	//COEUR DE PART A SORTIR
+	std::string	chan_name = to_lower_string(*b);
+	if (chan_name[0] != '#')
+		chan_name = "#" + chan_name;
+	server::chan_iterator chan = this->search_channel(chan_name);
+	if (chan == this->_channels.end())
+		NOSUCHCHANNEL(usr, *b);
+	else
+	{
+		if (!(*chan).is_user_in_channel(usr))
+			NOTONCHANNEL(usr, *b);
+		else
+		{
+			message msg(usr.to_prefix(), "PART");
+			msg.add_params(*b);
+
+			if (list_param.size() >= 2)
+			{
+				std::list<std::string>::iterator b_param = list_param.begin();
+				std::list<std::string>::iterator e_param = list_param.end();
+				b_param++;
+				for (; b_param != e_param; b_param++)
+				{
+				    msg.add_params(*b_param);
+				}
+			}
+			usr.send_a_message(msg);
+			(*chan).send_a_message(msg, usr);
+			this->pop_user_from_chan(usr, chan);
+		}
+	}
+}
 
 int	server::part_cmd(user& usr, std::list<std::string> list_param)
 {
-	std::vector<std::string> list_chan;
 	std::string	buff = list_param.front();
-	size_t c = 0;
-	while ((c = buff.find(",")) != std::string::npos)
-	{
-		if (buff[0] != ',')
-			list_chan.push_back(buff.substr(0, c));
-		buff = buff.substr(c + 1);
-		buff.erase(0, buff.find_first_not_of(","));
 
-	}
-	if (!buff.empty())
-		list_chan.push_back(buff);
-
+	std::vector<std::string> list_chan = split_comma(buff);
 	std::vector<std::string>::iterator	b = list_chan.begin();
 	std::vector<std::string>::iterator	e = list_chan.end();
-
-
-
 	for (; b != e; b++)
 	{
-	//	std::cout << "i'm parting this channel : " << *b << std::endl;
-		std::string	chan_name = to_lower_string(*b);
-		if (chan_name[0] != '#')
-			chan_name = "#" + chan_name;
-		server::chan_iterator chan = this->search_channel(chan_name);
-		if (chan == this->_channels.end())
-			NOSUCHCHANNEL(usr, *b);
-		else
-		{
-			if (!(*chan).is_user_in_channel(usr))
-				NOTONCHANNEL(usr, *b);
-			else
-			{
-				message msg(usr.to_prefix(), "PART");
-				msg.add_params(*b);
-
-				if (list_param.size() >= 2)
-				{
-					std::list<std::string>::iterator b_param = list_param.begin();
-					std::list<std::string>::iterator e_param = list_param.end();
-					b_param++;
-					for (; b_param != e_param; b_param++)
-					{
-					    msg.add_params(*b_param);
-					}
-				}
-				usr.send_a_message(msg);
-				(*chan).send_a_message(msg, usr);
-				this->pop_user_from_chan(usr, chan);
-			}
-		}
+		part_each_channel(usr, b, list_param);
 	}
 	return 0;
 }
 
-/* QUIT
- * 0: <quit message>
- * A client session is ended with a quit message.  The server must close
- * the connection to a client which sends a QUIT message. If a "Quit
- * Message" is given, this will be sent instead of the default message,
- * the nickname.
- *
- * If, for some other reason, a client connection is closed without  the
- * client  issuing  a  QUIT  command  (e.g.  client  dies and EOF occurs
- * on socket), the server is required to fill in the quit  message  with
- * some sort  of  message  reflecting the nature of the event which
- * caused it to happen. */
 
 int	server::quit_cmd(user& usr, std::list<std::string> list_param)
 {
-	std::cout << "QUIT SPELL"<< std::endl;
-
 	std::cout << "///" <<fd_buffer[usr.getfd()] << "///" << std::endl;
 	extern fd_set set;
 	user_iterator	uit = this->search_user(usr.nickname());
@@ -740,45 +510,6 @@ int	server::quit_cmd(user& usr, std::list<std::string> list_param)
 	}
 	return 0;
 }
-
-//////////////////////
-// COMMANDS TO SEND //
-//////////////////////
-
-/* NOTICE
- * 2: <nickname> <text>
- * The NOTICE message is used similarly to PRIVMSG. The difference
- * between NOTICE and PRIVMSG is that automatic replies must never be
- * sent in response to a NOTICE message. */
-
-/*
-void server::notice_cmd(user& sender, std::list<std::string> list_param)
-{
-	message	m(sender.to_prefix(), "NOTICE");
-	m.add_params(list_param.front());
-	m.add_params(at(list_param, 1));
-	if (list_param.front()[0] != '#')
-	{
-		server::user_iterator receiver = this->search_user(list_param.front());
-		if (receiver != _users.end()) 
-		{
-			(*receiver).send_a_message(m);
-			return ;
-		}
-		return ;
-	}
-	else
-	{
-		server::chan_iterator receiver = this->search_channel(at(list_param, 0));
-		if (receiver == _channels.end())
-			return ;
-		if (!(*receiver).is_user_in_channel(sender))
-			return ;
-		(*receiver).send_a_message(m, sender);
-	}
-	return ;
-}
-*/
 
 int	server::notice_cmd(user& sender, std::list<std::string> list_param)
 {
@@ -806,9 +537,6 @@ int	server::notice_cmd(user& sender, std::list<std::string> list_param)
 	return 0;
 }
 
-/* PONG
- * <daemon>
- * PONG message is a reply to PING message. Is the name of the server. */
 
 void server::pong(user& usr)
 {
@@ -818,30 +546,6 @@ void server::pong(user& usr)
 	usr.send_a_message(msg);
 }
 
-/*
- * INVITE
- * 2: <nickname> <channel>
- *
- * The INVITE command is used to invite a user to a channel.  The
- * parameter <nickname> is the nickname of the person to be invited to
- * the target channel <channel>.  There is no requirement that the
- * channel the target user is being invited to must exist or be a valid
- * channel.  However, if the channel exists, only members of the channel
- * are allowed to invite other users.  When the channel has invite-only
- * flag set, only channel operators may issue INVITE command.
- * Only the user inviting and the user being invited will receive
- * notification of the invitation.  Other channel members are not
- * notified.  (This is unlike the MODE changes, and is occasionally the
- * source of trouble for users.)
- *
- * Numeric Replies:
- * ERR_NEEDMOREPARAMS
- * ERR_NOSUCHNICK
- * ERR_NOTONCHANNEL
- * ERR_USERONCHANNEL
- * ERR_CHANOPRIVSNEEDED
- * RPL_INVITING
-*/
 
 int	server::invite_cmd(user& usr, std::list<std::string> list_param)
 {

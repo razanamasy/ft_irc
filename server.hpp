@@ -8,6 +8,7 @@
 # include <netdb.h> 
 # include <map>
 # include <list>
+# include <vector>
 # include <utility>
 # include <algorithm>
 # include <stdio.h>
@@ -59,6 +60,31 @@ class	server
 		std::list<user>&	Users();
 		std::list<channel>&	channels();
 
+
+
+		//COMMANDS
+
+		int	pass_cmd(user& usr, std::list<std::string> list_param);
+		int	nick_cmd(user& usr, std::list<std::string> list_param);
+		int	user_cmd(user& usr, std::list<std::string> list_param);
+		int	mode_cmd(user& usr, std::list<std::string>	_params);
+		int	kick_cmd(user& asskicker, std::list<std::string> list_param);
+		int	ping_cmd(user& usr);
+		int	join_cmd(user& usr, std::list<std::string> list_param);
+		int	who_cmd(user& usr, std::list<std::string> list_param);
+		int	privmsg_cmd(user& sender, std::list<std::string> list_param, std::string cmd_name);
+		int	part_cmd(user& usr, std::list<std::string> list_param);
+		int	quit_cmd(user& usr, std::list<std::string> list_param);
+		int	notice_cmd(user& usr, std::list<std::string> list_param);
+		int topic_cmd(user &usr, std::list<std::string> list_param);
+		int	invite_cmd(user& usr, std::list<std::string> list_param);
+
+		//UTILS FOR COMMANDS
+		int	join_each_channel(user& usr, std::string chan_name);
+		void	kick_each_user(user& asskicker, std::vector<std::string>::iterator b, std::list<std::string> list_param);
+		void	part_each_channel(user& usr, std::vector<std::string>::iterator	b, std::list<std::string> list_param);
+		void	msg_each_receivers(user& sender, std::vector<std::string>::iterator b,
+			       std::list<std::string> list_param, std::string cmd_name);
 		template <class T>
 		T	at(std::list<T> lst, int index) const
 		{
@@ -85,48 +111,21 @@ class	server
 			return (*_b);
 		}
 
-		//COMMANDS
-
-		int	pass_cmd(user& usr, std::list<std::string> list_param);
-		int	nick_cmd(user& usr, std::list<std::string> list_param);
-		int	user_cmd(user& usr, std::list<std::string> list_param);
-		int	mode_cmd(user& usr, std::list<std::string>	_params);
-		int	kick_cmd(user& asskicker, std::list<std::string> list_param);
-		int	ping_cmd(user& usr);
-		int	join_cmd(user& usr, std::list<std::string> list_param);
-		int	join_channel(user& usr, std::string chan_name);
-		int	who_cmd(user& usr, std::list<std::string> list_param);
-		int	privmsg_cmd(user& sender, std::list<std::string> list_param, std::string cmd_name);
-		int	part_cmd(user& usr, std::list<std::string> list_param);
-		int	quit_cmd(user& usr, std::list<std::string> list_param);
-		int	notice_cmd(user& usr, std::list<std::string> list_param);
-		int topic_cmd(user &usr, std::list<std::string> list_param);
-		int	invite_cmd(user& usr, std::list<std::string> list_param);
-
 		// CHANS
-
 		void	add_channel(channel& chan);
 		void	remove_channel(server::chan_iterator chan);
 		void	pop_user_from_chan(user& usr, chan_iterator it_chan);
-
 		chan_iterator	search_channel(std::string name);
-
 		bool	channel_exists(std::string name);
 
 		// USERS
 
 		void	add_user(const user& usr);
-
 		void	remove_user(user_iterator ui);
-
 		user_iterator	search_user(const std::string& nick);
-
 		user_iterator get_user_by_fd(int fd);
-
 		bool	is_ip_already_here(std::string ip);
-
 		bool	user_exists(const std::string& nick);
-
 		bool	user_exists(const int sockfd);
 
 		// COMMANDS
@@ -143,11 +142,8 @@ class	server
 
 		//CRYPTO
 		void    generate_key(size_t len);
-
 		void    cipher_password(std::string password);
-
 		std::string cipher_test_password(std::string password, std::string key);
-
 		bool    password_match(std::string candidate, std::string hash, std::string key);
 };
 
