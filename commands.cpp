@@ -113,7 +113,7 @@ int server::topic_cmd(user &usr, std::list<std::string> list_param)
 	}
 	else
 	{
-		CHANOPRIVSNEEDED(usr, at(list_param, 0));
+		TOPIC_CHANOPRIVSNEEDED(usr, at(list_param, 0));
 	}
 	return (0);
 }

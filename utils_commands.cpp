@@ -102,7 +102,7 @@ void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator 
 		if((*chan).is_op(asskicker))
 		{
 			if (!(*chan).is_user_in_channel(*asskicked) )
-				NOTONCHANNEL(*asskicked, (*chan).name());
+				USERNOTINCHANNEL(asskicker, (*asskicked).nickname(), (*chan).name());
 			else
 			{
 				message msg((asskicker).to_prefix(), "KICK");

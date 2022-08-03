@@ -159,6 +159,30 @@ int CHANOPRIVSNEEDED(user &usr, std::string chanel)
 	return (0);
 }
 
+int TOPIC_CHANOPRIVSNEEDED(user &usr, std::string chanel)
+{
+	message msg("irc.local", "482");
+	msg.add_params(usr.nickname());
+	msg.add_params(chanel);
+	msg.add_params("You do not have access to change the topic on this channel");
+	usr.send_a_message(msg);
+	return (0);
+}
+
+# define ERR_USERNOTINCHANNEL 441
+//<nick> <channel> :They aren't on that channel
+
+int USERNOTINCHANNEL(user &usr, std::string nick, std::string chanel)
+{
+	message msg("irc.local", "441");
+	msg.add_params(usr.nickname());
+	msg.add_params(nick);
+	msg.add_params(chanel);
+	msg.add_params("They aren't on that channel");
+	usr.send_a_message(msg);
+	return (0);
+}
+
 # define ERR_NOTONCHANNEL 442
 //<channel> :You're not on that channel
 

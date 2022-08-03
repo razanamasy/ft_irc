@@ -14,6 +14,8 @@ int ALREADYREGISTERED(user &usr);
 int BADCHANMASK(user &usr, std::string channel_name); 
 int NOSUCHCHANNEL(user &usr, std::string chanel_name);
 int CHANOPRIVSNEEDED(user &usr, std::string chanel);
+int TOPIC_CHANOPRIVSNEEDED(user &usr, std::string chanel);
+int USERNOTINCHANNEL(user &usr, std::string nick, std::string chanel);
 int NOTONCHANNEL(user &usr, std::string chanel);
 int USERONCHANNEL(user &usr, std::string nick, std::string &chanel);
 int CHANNELISFULL(user &usr, std::string &chanel);
