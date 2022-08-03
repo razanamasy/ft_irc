@@ -13,7 +13,7 @@ OBJS	=	${SRCS:.cpp=.o}
 
 DEP		=	${SRCS:.cpp=.d}
 
-FLAGS	:=	-Wall -Wextra -Werror -g -std=c++98 # -fsanitize=address -g3
+FLAGS	:=	-Wall -Wextra -Werror -g -std=c++98
 
 NAME	:=	ircserv
 

@@ -14,11 +14,20 @@ int	server::fill_channel(user& usr, std::string chan_name, chan_iterator& chan)
 {
 	chan = search_channel(chan_name);
 	if (chan == _channels.end())
-		return NOSUCHCHANNEL(usr, chan_name);
+	{
+		NOSUCHCHANNEL(usr, chan_name);
+		return (1);
+	}
 	if ((*chan).is_full())
-		return CHANNELISFULL(usr, chan_name);
+	{
+		CHANNELISFULL(usr, chan_name);
+		return (1);
+	}
 	if ((*chan).is_invite_only() && !(*chan).is_invited(&usr))
-		return INVITEONLYCHANNEL(usr, chan_name);
+	{
+		INVITEONLYCHANNEL(usr, chan_name);
+		return (1);
+	}
 	(*chan).add_user(usr);
 	return (0);
 }
@@ -60,9 +69,14 @@ int	server::join_each_channel(user& usr, std::string chan_name)
 		return TOOMANYCHANNELS(usr, chan_name);
 	chan_iterator	chan;
 	if (!this->channel_exists(chan_name) && (nbr_of_channels < MAX_CHANNEL))
+	{
 		create_channel(usr, chan_name, list_param, chan);
+	}
 	else
-		fill_channel(usr, chan_name, chan);
+	{
+		if (fill_channel(usr, chan_name, chan))
+			return (0);
+	}
 	message	m(usr.to_prefix(), "JOIN");
 	set_up_messages(m, chan_name, chan, usr);
 	usr.send_buffer();
@@ -73,9 +87,14 @@ int	server::join_each_channel(user& usr, std::string chan_name)
 //KICK
 void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator b, std::list<std::string> list_param)
 {
-	//COEUR DE KICK A SORTIR
 	server::user_iterator asskicked = this->search_user(*b);
 	server::chan_iterator chan		= this->search_channel(at(list_param, 0));
+
+	if (chan == this->_channels.end())
+	{
+		NOSUCHCHANNEL(asskicker, at(list_param, 0));
+		return ;
+	}
 	if (asskicked == this->_users.end())
 		(NOSUCHNICK(asskicker, *b));
 	else
@@ -104,7 +123,6 @@ void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator 
 //PART
 void	server::part_each_channel(user& usr, std::vector<std::string>::iterator	b, std::list<std::string> list_param)
 {
-	//COEUR DE PART A SORTIR
 	std::string	chan_name = to_lower_string(*b);
 	if (chan_name[0] != '#')
 		chan_name = "#" + chan_name;
@@ -165,9 +183,15 @@ void	server::msg_each_receivers(user& sender, std::vector<std::string>::iterator
 		{
 			server::chan_iterator receiver = this->search_channel((*b));
 			if (receiver == _channels.end())
+			{
 				NOSUCHCHANNEL(sender, (*b));
+				return ;
+			}
 			if (!(*receiver).is_user_in_channel(sender))
+			{
 				CANNOTSENDTOCHAN(sender, (*b));
+				return ;
+			}
 			(*receiver).send_a_message(m, sender);
 		}
 }

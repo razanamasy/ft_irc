@@ -208,45 +208,6 @@ int	server::mode_cmd(user& usr, std::list<std::string> params)
 
 
 //KICK
-/*
-void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator b, std::list<std::string> list_param)
-{
-	//COEUR DE KICK A SORTIR
-	server::user_iterator asskicked = this->search_user(*b);
-	server::chan_iterator chan		= this->search_channel(at(list_param, 0));
-
-	if (chan == this->_channels.end())
-	{
-		NOSUCHCHANNEL(asskicker, at(list_param, 0));
-		return ;
-	}
-
-	if (asskicked == this->_users.end())
-		(NOSUCHNICK(asskicker, *b));
-	else
-	{	
-		if((*chan).is_op(asskicker))
-		{
-			if (!(*chan).is_user_in_channel(*asskicked) )
-				NOTONCHANNEL(asskicker, (*chan).name());
-			else
-			{
-				message msg((asskicker).to_prefix(), "KICK");
-				msg.add_params((*chan).name());
-				msg.add_params((*asskicked).nickname());
-				if (list_param.size() == 3)
-					msg.add_params(at(list_param, 2));
-				(*asskicked).send_a_message(msg);
-				(*chan).send_a_message(msg, *asskicked);
-				this->pop_user_from_chan(*asskicked, chan);
-			}
-		}
-		else
-			CHANOPRIVSNEEDED(asskicker, (*chan).name());
-	}
-}
-*/
-
 int	server::kick_cmd(user& asskicker, std::list<std::string> list_param) 
 {
 	std::string	buff = at(list_param, 1);

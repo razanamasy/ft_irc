@@ -29,7 +29,9 @@ void ft_bzero(char * ptr, int len)
 
 void clear_all_socks()
 {
+	extern bool is_up;
     close(serv_socket);
+    is_up = false;
 	for (int i = 0; i < 1024; i++)
 	{
 		if (FD_ISSET(i, &set))

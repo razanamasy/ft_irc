@@ -370,8 +370,8 @@ void handle_interruption(int sig)
 	if (sig == 2)
 	{
 		std::cout << std::endl << "Server Interrupted" << std::endl;
-
 		clear_all_socks();
+	//	exit(0);
 	}
 }
 
