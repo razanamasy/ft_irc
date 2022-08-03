@@ -232,7 +232,7 @@ int	server::ini_server(int port)
 	load_local_serv_ip(serv_addr, port);
 
 	int val = 1;
-	setsockopt(serv_socket,SOL_SOCKET,SO_REUSEADDR,&val, sizeof(int));
+	setsockopt(serv_socket, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(int));
 
 	if (bind(serv_socket, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
 	{
@@ -368,9 +368,8 @@ void handle_interruption(int sig)
 	extern fd_set set;
 	if (sig == 2)
 	{
-		close(serv_socket);		// close master socket
+		close(serv_socket);
 
-		// close and remove all users using fd_set
         std::cout << std::endl << "Server Interrupted" << std::endl;
 		is_up = false;
 		for (int i = 0; i < 1024; i++)
@@ -395,21 +394,114 @@ void	handle_signal() {
 	return ;
 }
 
+int server::new_connection()
+{
+	int fd_acc;
+	extern int serv_socket;
+	extern fd_set set;
+	socklen_t	slt = sizeof(this->addr_client);
+
+	fd_acc = accept(serv_socket, (struct sockaddr*)&addr_client, &slt);
+	if (this->nbr_of_users >= MAX_USERS)
+	{
+		send(fd_acc, "ERROR :server is full, you may not connect [access denied by configuration]\r\n", 77, 0);
+		close(fd_acc);
+		return (1);
+	}
+
+		std::string ip = inet_ntoa(addr_client.sin_addr);
+		FD_SET(fd_acc, &(set));
+		this->nbr_of_users++;
+		this->_users.push_back(user(fd_acc, ip));
+		return (0);
+}
+
+int server::problem_on_client(int fdcur)
+{
+	server::user_iterator	it_del_user = get_user_by_fd(fdcur);
+	std::list<std::string>	lst;
+
+	if (it_del_user == this->_users.end())
+		return (1);
+
+	lst.push_back("disconnected");
+	quit_cmd(*it_del_user, lst);
+
+	return (0);
+}
+
+int server::parcing_manage_request(int fdcur)
+{
+		size_t b = 0;
+		size_t c = 0;
+		while ((b = fd_buffer[fdcur].find("\n")) != std::string::npos)
+		{
+			if ((c = fd_buffer[fdcur].find("\r\n")) != std::string::npos)
+			{
+				message	msg(fd_buffer[fdcur].substr(0, c));
+				fd_buffer[fdcur] = fd_buffer[fdcur].substr(c + 2);				
+						
+				if (manage(fdcur, msg) == 1)
+				{
+					std::cout << *this;
+					return (1);
+				}
+				std::cout << *this;
+			}
+			else
+			{
+				message	msg(fd_buffer[fdcur].substr(0, b));
+				fd_buffer[fdcur] = fd_buffer[fdcur].substr(b + 1);
+				if (manage(fdcur, msg) == 1)
+				{
+					std::cout << *this;
+					return (1);
+				}
+				std::cout << *this;
+			}
+		}
+	return (0);
+}
+
+int server::request_from_client(int fdcur)
+{
+	char buf[1024];
+	int cur;
+	ft_bzero(buf, 1024);
+	cur = recv(fdcur, buf, 1024, 0);
+	if (cur <= 0)
+	{
+		problem_on_client(fdcur);
+	}
+	else
+	{
+		std::string	messages(buf);
+		std::map<int, std::string>::iterator	_e = fd_buffer.end();
+		if (fd_buffer.find(fdcur) == _e)
+		{
+			fd_buffer.insert(make_pair(fdcur, messages));
+		}
+		else
+		{
+			if (!messages.empty())
+				fd_buffer[fdcur] += messages;
+		}
+		if (parcing_manage_request(fdcur))
+			return (1);
+	}
+	return (0);
+}
+
 int server::listen_all_socks() 
 {
 	extern int serv_socket;
 	extern fd_set set;
 	fd_set save;
 	const int MAX_FD = sysconf(_SC_OPEN_MAX);
-	int fd_acc;
-	char buf[1024];
-	int cur;
 
-	ft_bzero(buf, sizeof(buf));
-	handle_signal();	// replace signal ft
+	handle_signal();
 	while (is_up)
 	{
-		//signal(SIGINT, handle_interruption);
 		save = set;
 		select(MAX_FD + 1, &save, NULL, NULL, NULL);
 		for (int fdcur = 0 ; (fdcur < MAX_FD && is_up) ; fdcur++)
@@ -418,75 +510,13 @@ int server::listen_all_socks()
 			{
 				if (fdcur == serv_socket)
 				{
-					socklen_t	slt = sizeof(addr_client);
-					fd_acc = accept(serv_socket, (struct sockaddr*)&addr_client, &slt);
-					if (this->nbr_of_users >= MAX_USERS)
-					{
-						send(fd_acc, "ERROR :server is full, you may not connect [access denied by configuration]\r\n", 77, 0);
-						close(fd_acc);
-						continue ;
-					}
-					std::string ip = inet_ntoa(addr_client.sin_addr);
-					FD_SET(fd_acc, &(set));
-					this->nbr_of_users++;
-					this->_users.push_back(user(fd_acc, ip));
+					if (new_connection())
+						continue;
 				}
 				else
 				{
-					ft_bzero(buf, 1024);
-					cur = recv(fdcur, buf, 1024, 0);
-					if (cur <= 0)
-					{
-						server::user_iterator	it_del_user = get_user_by_fd(fdcur);
-						if (it_del_user == this->_users.end())	// if user == end, then user doesnt exist, then finish
-								return 0;
-						std::list<std::string>	lst;
-						lst.push_back("disconnected");
-						quit_cmd(*it_del_user, lst);
-					}
-					else
-					{
-						std::string	messages(buf); // a string that can contains multiple messages
-						std::map<int, std::string>::iterator	_e = fd_buffer.end();
-						if (fd_buffer.find(fdcur) == _e)
-						{
-							fd_buffer.insert(make_pair(fdcur, messages));
-						}
-						else
-						{
-							if (!messages.empty())
-								fd_buffer[fdcur] += messages;
-						}
-						size_t b = 0;
-						size_t c = 0;
-						while ((b = fd_buffer[fdcur].find("\n")) != std::string::npos)
-						{
-							if ((c = fd_buffer[fdcur].find("\r\n")) != std::string::npos)
-							{
-								message	msg(fd_buffer[fdcur].substr(0, c));
-								fd_buffer[fdcur] = fd_buffer[fdcur].substr(c + 2);				
-						
-								if (manage(fdcur, msg) == 1)
-								{
-									std::cout << *this;
-									break;
-								}
-								std::cout << *this;
-
-							}
-							else
-							{
-								message	msg(fd_buffer[fdcur].substr(0, b));
-								fd_buffer[fdcur] = fd_buffer[fdcur].substr(b + 1);
-								if (manage(fdcur, msg) == 1)
-								{
-									std::cout << *this;
-									break;
-								}
-								std::cout << *this;
-							}
-						}
-					}
+					if (request_from_client(fdcur))
+						break;
 				}
 			}
 		}

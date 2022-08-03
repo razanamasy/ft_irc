@@ -41,6 +41,7 @@ int MOTD(user &usr, std::string &text);
 int ENDOFMOTD(user &usr);
 int UMODEIS(user &usr, std::string &user_mode_string);
 int	INVITEONLYCHANNEL(user& usr, std::string channel);
+int ERR_NOTEXTTOSEND(user &usr);
 message NAMEREPLY(std::string nickname, std::string channel, std::string user_lst);
 message ENDOFNAMES(std::string nickname, std::string channel);
 message RPL_TOPIC(user& usr, std::string chan, std::string top);

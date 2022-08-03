@@ -18,6 +18,14 @@ message RPL_NOTOPIC(user& usr, std::string chan)
 	return m;
 }
 
+int ERR_NOTEXTTOSEND(user & usr)
+{
+	message m("irc.local", "412");
+	m.add_params(usr.nickname());
+	m.add_params("No text to send");
+	usr.send_a_message(m);
+	return (0);
+}
 int	NOTREGISTERED(user& usr, std::string command)
 {
 	message	m("irc.local", "451");
