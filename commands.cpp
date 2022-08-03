@@ -88,7 +88,7 @@ int server::topic_cmd(user &usr, std::list<std::string> list_param)
 		}
 		else
 		{
-			m = RPL_TOPIC(usr, at(list_param, 0), at(list_param, 1));
+			m = RPL_TOPIC(usr, at(list_param, 0), (*chan).topic());
 			usr.send_a_message(m);
 			return (0);
 		}
@@ -288,41 +288,6 @@ int	server::who_cmd(user& usr, std::list<std::string> list_param)
 
 
 //PRIVMSG
-/*
-void	server::msg_each_receivers(user& sender, std::vector<std::string>::iterator	b, std::list<std::string> list_param, std::string cmd_name)
-{
-		//COEUR DE FOR A SORTIR
-		message	m(sender.to_prefix(), cmd_name);
-		m.add_params((*b));
-		std::list<std::string>::iterator b_param = list_param.begin();
-		std::list<std::string>::iterator e_param = list_param.end();
-		b_param++;
-		for (; b_param != e_param; b_param++)
-			m.add_params(*b_param);
-
-		if ((*b)[0] != '#')
-		{
-			server::user_iterator receiver = this->search_user((*b));
-			if (receiver != _users.end()) 
-			{
-				(*receiver).send_a_message(m);
-			}
-			else
-			{
-					NOSUCHNICK(sender, (*b));
-			}
-		}
-		else
-		{
-			server::chan_iterator receiver = this->search_channel((*b));
-			if (receiver == _channels.end())
-				NOSUCHCHANNEL(sender, (*b));
-			if (!(*receiver).is_user_in_channel(sender))
-				CANNOTSENDTOCHAN(sender, (*b));
-			(*receiver).send_a_message(m, sender);
-		}
-}
-*/
 int	server::privmsg_cmd(user& sender, std::list<std::string> list_param, std::string cmd_name) 
 {
 	if (list_param.size() < 2)
@@ -346,43 +311,6 @@ int	server::privmsg_cmd(user& sender, std::list<std::string> list_param, std::st
 }
 
 //PART
-/*
-void	server::part_each_channel(user& usr, std::vector<std::string>::iterator	b, std::list<std::string> list_param)
-{
-	//COEUR DE PART A SORTIR
-	std::string	chan_name = to_lower_string(*b);
-	if (chan_name[0] != '#')
-		chan_name = "#" + chan_name;
-	server::chan_iterator chan = this->search_channel(chan_name);
-	if (chan == this->_channels.end())
-		NOSUCHCHANNEL(usr, *b);
-	else
-	{
-		if (!(*chan).is_user_in_channel(usr))
-			NOTONCHANNEL(usr, *b);
-		else
-		{
-			message msg(usr.to_prefix(), "PART");
-			msg.add_params(*b);
-
-			if (list_param.size() >= 2)
-			{
-				std::list<std::string>::iterator b_param = list_param.begin();
-				std::list<std::string>::iterator e_param = list_param.end();
-				b_param++;
-				for (; b_param != e_param; b_param++)
-				{
-				    msg.add_params(*b_param);
-				}
-			}
-			usr.send_a_message(msg);
-			(*chan).send_a_message(msg, usr);
-			this->pop_user_from_chan(usr, chan);
-		}
-	}
-}
-*/
-
 int	server::part_cmd(user& usr, std::list<std::string> list_param)
 {
 	std::string	buff = list_param.front();
@@ -397,7 +325,7 @@ int	server::part_cmd(user& usr, std::list<std::string> list_param)
 	return 0;
 }
 
-
+//QUIT
 int	server::quit_cmd(user& usr, std::list<std::string> list_param)
 {
 	std::cout << "///" <<fd_buffer[usr.getfd()] << "///" << std::endl;
@@ -426,32 +354,7 @@ int	server::quit_cmd(user& usr, std::list<std::string> list_param)
 	return 0;
 }
 
-int	server::notice_cmd(user& sender, std::list<std::string> list_param)
-{
-	if (list_param.size() < 2)
-		return NORECIPIENT(sender, std::string("NOTICE"));
-	message	m(sender.to_prefix(), "NOTICE");
-	m.add_params(list_param.front());
-	m.add_params(at(list_param, 1));
-	if (list_param.front()[0] != '#')
-	{
-		server::user_iterator receiver = this->search_user(list_param.front());
-		if (receiver == _users.end()) 
-			return NOSUCHNICK(sender, list_param.front());
-		(*receiver).send_a_message(m);
-	}
-	else
-	{
-		server::chan_iterator receiver = this->search_channel(at(list_param, 0));
-		if (receiver == _channels.end())
-			return NOSUCHCHANNEL(sender, list_param.front());
-		if (!(*receiver).is_user_in_channel(sender))
-			return CANNOTSENDTOCHAN(sender, list_param.front());
-		(*receiver).send_a_message(m, sender);
-	}
-	return 0;
-}
-
+//INVITE
 int	server::invite_cmd(user& usr, std::list<std::string> list_param)
 {
 	std::string	chan_name	= at(list_param, 1);
