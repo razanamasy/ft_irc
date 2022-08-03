@@ -1,6 +1,5 @@
 # include "server.hpp"
-
-void clear_all_socks();
+# include "utils.hpp"
 
 server::server(int port)
 {

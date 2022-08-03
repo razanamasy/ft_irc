@@ -2,6 +2,7 @@ SRCS	:=	main.cpp		\
 			server.cpp		\
 			user.cpp		\
 			channel.cpp		\
+			utils.cpp	\
 			utils_commands.cpp	\
 			commands.cpp	\
 			replies.cpp		\
