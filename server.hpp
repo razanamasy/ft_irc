@@ -153,6 +153,15 @@ class	server
 		void    cipher_password(std::string password);
 		std::string cipher_test_password(std::string password, std::string key);
 		bool    password_match(std::string candidate, std::string hash, std::string key);
+
+		class SocketError : public std::exception
+		{
+			public:
+			virtual const char * what() const throw()
+			{
+				return "Error on socket";
+			}
+		};
 };
 
 std::ostream&	operator<<(std::ostream& o, channel& chan);

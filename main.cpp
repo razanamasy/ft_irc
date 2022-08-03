@@ -25,6 +25,20 @@ void ft_bzero(char * ptr, int len)
     }
 }
 
+void clear_all_socks()
+{
+    close(serv_socket);
+	for (int i = 0; i < 1024; i++)
+	{
+		if (FD_ISSET(i, &set))
+		{
+			FD_CLR(i, &set);
+			close(i);
+		}
+	}
+	FD_ZERO(&set);
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -40,6 +54,15 @@ int main(int argc, char *argv[])
 
     ft_bzero(argv[2], ft_strlen(argv[2]));
 
-    irc_serv.listen_all_socks();
+    try 
+    {
+        irc_serv.listen_all_socks();
+    }
+    catch (server::SocketError exp)
+    {
+        std::cerr << exp.what() << std::endl;
+
+        clear_all_socks();
+    }
     return (0);
 }

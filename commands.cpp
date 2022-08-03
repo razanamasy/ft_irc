@@ -213,6 +213,13 @@ void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator 
 	//COEUR DE KICK A SORTIR
 	server::user_iterator asskicked = this->search_user(*b);
 	server::chan_iterator chan		= this->search_channel(at(list_param, 0));
+
+	if (chan == this->_channels.end())
+	{
+		NOSUCHCHANNEL(asskicker, at(list_param, 0));
+		return ;
+	}
+
 	if (asskicked == this->_users.end())
 		(NOSUCHNICK(asskicker, *b));
 	else
@@ -220,7 +227,7 @@ void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator 
 		if((*chan).is_op(asskicker))
 		{
 			if (!(*chan).is_user_in_channel(*asskicked) )
-				NOTONCHANNEL(*asskicked, (*chan).name());
+				NOTONCHANNEL(asskicker, (*chan).name());
 			else
 			{
 				message msg((asskicker).to_prefix(), "KICK");

@@ -308,6 +308,8 @@ int CANNOTSENDTOCHAN(user &usr, std::string &channel_name)
 	return (0);
 }
 
+
+
 # define RPL_WHOISUSER 311
 //<nick> <user> <host> * :<real name>
 

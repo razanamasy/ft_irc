@@ -1,4 +1,5 @@
 #include "user.hpp"
+#include "server.hpp"
 
 //OUT OF MEMEBER FUNCTION UTILS FOR USER
 std::string	to_lower_string(std::string str)
@@ -115,8 +116,10 @@ void	user::send_a_message(message& m) const
 
 void	user::send_a_string(const std::string& m) const
 {
-//	std::cout << "sending string to '" << _nickname << "':" << m;
-	send(fd_user, m.c_str(), m.length(), 0);
+	if (send(fd_user, m.c_str(), m.length(), 0) < 0)
+	{
+		throw server::SocketError();
+	}
 }
 
 bool	is_user_in_a_list(user* usr, std::list<user*>& lst)

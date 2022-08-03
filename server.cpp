@@ -1,5 +1,7 @@
 # include "server.hpp"
 
+void clear_all_socks();
+
 server::server(int port)
 {
 	extern fd_set set;
@@ -368,19 +370,9 @@ void handle_interruption(int sig)
 	extern fd_set set;
 	if (sig == 2)
 	{
-		close(serv_socket);
+		std::cout << std::endl << "Server Interrupted" << std::endl;
 
-        std::cout << std::endl << "Server Interrupted" << std::endl;
-		is_up = false;
-		for (int i = 0; i < 1024; i++)
-		{
-			if (FD_ISSET(i, &set))
-			{
-					FD_CLR(i, &set);
-					close(i);
-			}
-		}
-		FD_ZERO(&set);
+		clear_all_socks();
 	}
 }
 
@@ -404,7 +396,10 @@ int server::new_connection()
 	fd_acc = accept(serv_socket, (struct sockaddr*)&addr_client, &slt);
 	if (this->nbr_of_users >= MAX_USERS)
 	{
-		send(fd_acc, "ERROR :server is full, you may not connect [access denied by configuration]\r\n", 77, 0);
+		if (send(fd_acc, "ERROR :server is full, you may not connect [access denied by configuration]\r\n", 77, 0) == -1)
+		{
+			throw SocketError();
+		}
 		close(fd_acc);
 		return (1);
 	}
