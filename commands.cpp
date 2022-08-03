@@ -208,6 +208,7 @@ int	server::mode_cmd(user& usr, std::list<std::string> params)
 
 
 //KICK
+/*
 void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator b, std::list<std::string> list_param)
 {
 	//COEUR DE KICK A SORTIR
@@ -244,6 +245,7 @@ void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator 
 			CHANOPRIVSNEEDED(asskicker, (*chan).name());
 	}
 }
+*/
 
 int	server::kick_cmd(user& asskicker, std::list<std::string> list_param) 
 {
@@ -270,87 +272,6 @@ int	server::ping_cmd(user& usr)
 }
 
 //JOIN
-void	server::create_channel(user& usr, std::string chan_name, std::list<std::string> list_param, chan_iterator& chan)
-{
-	channel	new_chan(chan_name, &usr);
-	this->add_channel(new_chan);
-	chan = search_channel(chan_name);
-	usr.add_a_chan(&(*chan));
-	mode_cmd(usr, list_param);
-}
-
-int	server::fill_channel(user& usr, std::string chan_name, chan_iterator& chan)
-{
-	chan = search_channel(chan_name);
-	if (chan == _channels.end())
-		return NOSUCHCHANNEL(usr, chan_name);
-	if ((*chan).is_full())
-		return CHANNELISFULL(usr, chan_name);
-	if ((*chan).is_invite_only() && !(*chan).is_invited(&usr))
-		return INVITEONLYCHANNEL(usr, chan_name);
-	(*chan).add_user(usr);
-	return (0);
-}
-
-void	server::set_up_messages(message& m, std::string chan_name, chan_iterator& chan, user& usr)
-{
-	//set message for current user
-	m.add_params(chan_name);
-	usr.add_to_buffer(m);
-
-	std::string	nicks;
-	channel::user_iterator	b = (*chan).users().begin();
-	channel::user_iterator	e = (*chan).users().end();
-	while (b != e)
-	{
-		nicks += " ";
-		if ((*chan).is_op(*(*b)))
-			nicks += "@";
-		nicks += (*b)->nickname();
-		b++;
-	}
-
-	//set message to send to all user of the channel
-	if (((*chan).topic()).empty())
-	{
-		usr.add_to_buffer(RPL_NOTOPIC(usr, (*chan).name()));
-	}
-	else
-	{
-		usr.add_to_buffer(RPL_TOPIC(usr, (*chan).name(), (*chan).topic()));
-	}
-	usr.add_to_buffer(NAMEREPLY(usr.nickname(), (*chan).name(), nicks));
-	usr.add_to_buffer(ENDOFNAMES(usr.nickname(), (*chan).name()));
-}
-
-
-
-int	server::join_each_channel(user& usr, std::string chan_name)
-{
-	std::list<std::string> list_param(1, chan_name);
-	chan_name = to_lower_string(chan_name);
-	if (chan_name.empty())
-		return 1;
-	if (chan_name[0] != '#')
-		return BADCHANMASK(usr, chan_name);
-	if (!usr.can_join_a_channel())
-		return TOOMANYCHANNELS(usr, chan_name);
-	chan_iterator	chan;
-	//ADD or fill the chan
-	if (!this->channel_exists(chan_name) && (nbr_of_channels < MAX_CHANNEL))
-		create_channel(usr, chan_name, list_param, chan);
-	else
-		fill_channel(usr, chan_name, chan);
-	//set up messages
-	message	m(usr.to_prefix(), "JOIN");
-	set_up_messages(m, chan_name, chan, usr);
-	//Message sent from user
-	usr.send_buffer();
-	//Message sent from channel
-	(*chan).send_a_message(m, usr);
-	return 0;
-}
-
 int	server::join_cmd(user& usr, std::list<std::string> list_param)
 {
 	std::string buff = list_param.front();
@@ -359,9 +280,7 @@ int	server::join_cmd(user& usr, std::list<std::string> list_param)
 	std::vector<std::string>::iterator	b = list_chan.begin();
 	std::vector<std::string>::iterator	e = list_chan.end();
 	for (; b != e; b++)
-	{
 		this->join_each_channel(usr, *b);
-	}
 	return 0;
 }
 
@@ -408,6 +327,7 @@ int	server::who_cmd(user& usr, std::list<std::string> list_param)
 
 
 //PRIVMSG
+/*
 void	server::msg_each_receivers(user& sender, std::vector<std::string>::iterator	b, std::list<std::string> list_param, std::string cmd_name)
 {
 		//COEUR DE FOR A SORTIR
@@ -441,7 +361,7 @@ void	server::msg_each_receivers(user& sender, std::vector<std::string>::iterator
 			(*receiver).send_a_message(m, sender);
 		}
 }
-
+*/
 int	server::privmsg_cmd(user& sender, std::list<std::string> list_param, std::string cmd_name) 
 {
 	if (list_param.size() < 2)
@@ -465,6 +385,7 @@ int	server::privmsg_cmd(user& sender, std::list<std::string> list_param, std::st
 }
 
 //PART
+/*
 void	server::part_each_channel(user& usr, std::vector<std::string>::iterator	b, std::list<std::string> list_param)
 {
 	//COEUR DE PART A SORTIR
@@ -499,6 +420,7 @@ void	server::part_each_channel(user& usr, std::vector<std::string>::iterator	b, 
 		}
 	}
 }
+*/
 
 int	server::part_cmd(user& usr, std::list<std::string> list_param)
 {
@@ -568,16 +490,6 @@ int	server::notice_cmd(user& sender, std::list<std::string> list_param)
 	}
 	return 0;
 }
-
-
-void server::pong(user& usr)
-{
-	message	msg;
-	msg.command(std::string("PONG"));
-	msg.add_params(usr.servername());
-	usr.send_a_message(msg);
-}
-
 
 int	server::invite_cmd(user& usr, std::list<std::string> list_param)
 {

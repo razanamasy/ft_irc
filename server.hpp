@@ -83,18 +83,20 @@ class	server
 		int topic_cmd(user &usr, std::list<std::string> list_param);
 		int	invite_cmd(user& usr, std::list<std::string> list_param);
 
-		//UTILS FOR COMMANDS
+		//A SORTIR DANS UTILS COMMANDS
+		//UTILS FOR JOIN COMMANDS
 		int	join_each_channel(user& usr, std::string chan_name);
 		void	create_channel(user& usr, std::string chan_name, std::list<std::string> list_param, chan_iterator& chan);
 		int	fill_channel(user& usr, std::string chan_name, chan_iterator& chan);
 		void	set_up_messages(message& m, std::string chan_name, chan_iterator& chan, user& usr);
 
+		//UTILS FOR OTHER COMMANDS
 		void	kick_each_user(user& asskicker, std::vector<std::string>::iterator b, std::list<std::string> list_param);
 		void	part_each_channel(user& usr, std::vector<std::string>::iterator	b, std::list<std::string> list_param);
 		void	msg_each_receivers(user& sender, std::vector<std::string>::iterator b,
 			       std::list<std::string> list_param, std::string cmd_name);
 		template <class T>
-		T	at(std::list<T> lst, int index) const
+		T	at(std::list<T> lst, int index)
 		{
 			typename std::list<T>::iterator	_b = lst.begin();
 			typename std::list<T>::iterator	_e = lst.end();
