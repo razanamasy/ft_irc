@@ -6,6 +6,7 @@
 /* replies that COULD be needed to sent back */
 
 int	NOTREGISTERED(user& usr, std::string command);
+int ERR_NONICKNAMEGIVEN(user &usr);
 int NONICKNAMEGIVEN(user &usr);
 int ERRONEUSNICKNAME(user &usr, std::string &nick);
 int NICKNAMEINUSE(user &usr, std::string &nick);
@@ -43,6 +44,7 @@ int MOTD(user &usr, std::string &text);
 int ENDOFMOTD(user &usr);
 int UMODEIS(user &usr, std::string &user_mode_string);
 int	INVITEONLYCHANNEL(user& usr, std::string channel);
+int RPL_ENDOFINVITELIST(user & usr);
 int ERR_NOTEXTTOSEND(user &usr);
 message NAMEREPLY(std::string nickname, std::string channel, std::string user_lst);
 message ENDOFNAMES(std::string nickname, std::string channel);

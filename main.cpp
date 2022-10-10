@@ -9,14 +9,8 @@ int main(int argc, char *argv[])
         std::cout << "./ircserv [port number] [password]:" <<std::endl;
         return (1);
     }
-
     server irc_serv(atoi(argv[1]));
-
-    irc_serv.generate_key(ft_strlen(argv[2]));
-    irc_serv.cipher_password(argv[2]);
-
-    ft_bzero(argv[2], ft_strlen(argv[2]));
-
+    irc_serv.setkey(argv[2]);
     try 
     {
         irc_serv.listen_all_socks();

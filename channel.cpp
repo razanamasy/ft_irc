@@ -1,7 +1,6 @@
 # include "channel.hpp"
 # include <string> 
 
-// CTOR DTOR
 
 channel::channel(const std::string& channel_name, user* op)
 {
@@ -15,7 +14,6 @@ channel::channel(const std::string& channel_name, user* op)
 channel::~channel(){};
 
 // ACCESS
-
 std::string channel::topic()
 {
 	return (this->_topic);
@@ -27,33 +25,46 @@ void channel::settopic(std::string top)
 	return ;
 }
 
-std::string&			channel::name()	{ 
+std::string&			channel::name()
+{ 
 		return _name; 
 }
 
-const std::string&		channel::name() const { 
+const std::string&		channel::name() const
+{ 
 		return _name; 
 }
 
-const user&				channel::op() const	{ 
+const user&				channel::op() const
+{ 
 		return *_operator; 
 }
 
-size_t	channel::number_of_users() const { 
+size_t	channel::number_of_users() const
+{ 
 		return nbr_of_users; 
 }
 
 std::list<user*>&	channel::users()
-{ return _users; }
+{
+	return _users;
+}
 
+//INVITE MANAGEMENT
 void	channel::invite_only(bool b)
-{ _invite_only = b; }
+{
+	_invite_only = b;
+}
 
 bool	channel::is_invite_only()
-{ return _invite_only; }
+{
+	return _invite_only;
+}
 
 std::list<user*>&	channel::invite_list()
-{ return _invite_list; }
+{
+	return _invite_list;
+}
 
 void	channel::add_to_invite_list(user* usr)
 {
@@ -88,20 +99,24 @@ void	channel::remove_from_invite_list(user* usr)
 		_invite_list.erase(b);
 }
 
-bool	channel::is_op(const user& usr) const { 
+//OPERATOR
+bool	channel::is_op(const user& usr) const
+{ 
 		if (!_operator)
 			return (false);
 		return (*_operator == usr); 
 }
 
+//GENERAL INFO
 bool	channel::is_empty() const
 {
 	return !nbr_of_users;
 }
 
 bool	channel::is_full() const
-{ return (nbr_of_users >= MAX_USER_PER_CHANNEL); }
-
+{
+	return (nbr_of_users >= MAX_USER_PER_CHANNEL);
+}
 
 channel::user_iterator	channel::search(const user& usr)
 {
@@ -116,12 +131,12 @@ channel::user_iterator	channel::search(const user& usr)
 	return b;
 }
 
-bool	channel::is_user_in_channel(user& usr) { 
+bool	channel::is_user_in_channel(user& usr)
+{ 
 		return !(search(usr) == _users.end()); 
 }
 
-// MESSAGE
-
+//SEND INFO
 void	channel::send_a_message(message m, const user& usr)
 {
 	channel::user_iterator	b = _users.begin();
@@ -134,9 +149,8 @@ void	channel::send_a_message(message m, const user& usr)
 	}
 }
 
-// MODIFY USER
-
-bool	channel::add_user(user& usr) 		// false: reply to JOIN, 471 ERR_CHANNELISFULL
+// USER LIST
+bool	channel::add_user(user& usr)
 {
 	if (nbr_of_users == MAX_USER_PER_CHANNEL)
 		return false;
@@ -150,7 +164,7 @@ bool	channel::add_user(user& usr) 		// false: reply to JOIN, 471 ERR_CHANNELISFU
 }
 
 
-bool	channel::remove_user(const user& usr) // false: reply to PART, 422 ERR_NOTONCHANNEL
+bool	channel::remove_user(const user& usr)
 {
 	channel::user_iterator	el = search(usr);
 	if (el == _users.end())

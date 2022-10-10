@@ -28,7 +28,7 @@ class user
 		bool				passed;
 
 	public:
-		//getters
+		//GETTER
 		std::string				nickname() const;
 		std::string				username() const;
 		std::string				hostname() const;
@@ -48,34 +48,21 @@ class user
 		std::string	to_prefix() const;
 
 		bool	can_join_a_channel() const;
-
 		bool	add_a_chan(channel *newChan);
-
-		//user(const std::string& nick);
 
 		user(const int fd, std::string hn);
 
 		bool	is_passed();
-
 		void	pass();
 
 		~user();
-
-
 		bool	operator==(const user& usr) const;
-
 		bool	operator!=(const user& usr) const;
-
 		void	add_to_buffer(message msg);
-
 		void	send_buffer();
-
 		void	send_a_message(message& m) const;
-
 		void	send_a_string(const std::string& m) const;
-
 		bool remove_a_chan(channel chan);
-
 		void	send_to_all_known_users(message m);
 };
 

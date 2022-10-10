@@ -25,6 +25,9 @@ int	server::pass_cmd(user& usr, std::list<std::string> list_param)
 	std::list<user>::const_iterator	_b = _users.begin();
 	std::list<user>::const_iterator	_e = _users.end();
 
+	if (list_param.size() == 1 && list_param.front().size() == 0)
+		return (ALREADYREGISTERED(usr));
+
 	while (_b != _e)
 	{
 		if (*_b == usr && !( (usr.username()).empty() ))
@@ -33,7 +36,7 @@ int	server::pass_cmd(user& usr, std::list<std::string> list_param)
 		}
 		_b++;
 	}
-	if (this->password_match(list_param.front(), this->hash, this->key))
+	if (this->password_match(list_param.front(), this->key))
 	{
 		usr.pass();
 	}
@@ -43,8 +46,22 @@ int	server::pass_cmd(user& usr, std::list<std::string> list_param)
 //NICK
 int	server::nick_cmd(user& usr, std::list<std::string> list_param)
 {
+	if (list_param.size() == 1 && list_param.front().size() == 0)
+		return (ERR_NONICKNAMEGIVEN(usr));
+
 	std::string new_nick = at(list_param, 0);
 
+	if (list_param.size() > 1)
+	{
+		std::list<std::string>::iterator	b = list_param.begin();
+		std::list<std::string>::iterator	e = list_param.end();
+		b++;
+		for (; b != e; b++)
+		{
+			new_nick += " ";
+			new_nick += *b;
+		}
+	}
 	if (uncorrect_param(new_nick))
 		return (ERRONEUSNICKNAME(usr, new_nick));
 
@@ -70,6 +87,9 @@ int	server::nick_cmd(user& usr, std::list<std::string> list_param)
 //TOPIC
 int server::topic_cmd(user &usr, std::list<std::string> list_param)
 {
+	if (list_param.size() == 1 && list_param.front().size() == 0)
+		return (NOSUCHCHANNEL(usr, "*"));
+
 	server::chan_iterator chan = this->search_channel(at(list_param, 0));
 	message m;
 	if (chan == (this->_channels).end())
@@ -122,22 +142,20 @@ int server::topic_cmd(user &usr, std::list<std::string> list_param)
 int	server::user_cmd(user& usr, std::list<std::string> list_param) 
 {
 	extern fd_set set;
+	if (list_param.size() == 1 && list_param.front().size() == 0)
+		return (NEEDMOREPARAMS(usr, "USER"));
+
 	if (usr.nickname().empty())
 		return 0;
-	if (!this->user_exists(usr.nickname()))				// user was not correctly set? useless protection?
-		return NOSUCHNICK(usr, usr.nickname());
+	if (!this->user_exists(usr.nickname()))
+		return 1;
 	else if (!usr.username().empty()) 
-	{// hostname already filled
 		return ALREADYREGISTERED(usr);
-	}
 
 	if (!usr.is_passed())
 	{
 		message	m("", "ERROR");
-		std::string	str = 		"Closing link: (" 
-							+ 	list_param.front() 
-							+ 	"@" + usr.hostname() 
-							+ 	") [Access denied by configuration]";
+		std::string	str = "Closing link: (" + list_param.front() + 	"@" + usr.hostname() + 	") [Access denied by configuration]";
 		m.add_params(str);
 		usr.send_a_message(m);
 		close(usr.getfd());
@@ -146,7 +164,7 @@ int	server::user_cmd(user& usr, std::list<std::string> list_param)
 		return 1;
 	}
 
-	usr.username(at(list_param, 0));					// fill user params
+	usr.username(at(list_param, 0));
 	if (list_param.size() == 4)
 		usr.servername(at(list_param, 2)); 
 	if (list_param.size() == 4)
@@ -169,6 +187,14 @@ int	server::user_cmd(user& usr, std::list<std::string> list_param)
 //MODE
 int	server::mode_cmd(user& usr, std::list<std::string> params)
 {
+	if (params.size() == 1 && params.front().size() == 0)
+	{
+		if (usr.username().empty())
+			return (NOTREGISTERED(usr, "MODE"));
+		else
+			return (NOSUCHNICK(usr, "*"));
+
+	}
 	if (params.size() < 1)
 		return NEEDMOREPARAMS(usr, "MODE");
 	if ((params.front())[0] == '#')
@@ -176,16 +202,16 @@ int	server::mode_cmd(user& usr, std::list<std::string> params)
 		chan_iterator	chan_it = this->search_channel(params.front());
 		if (chan_it == _channels.end())
 			return NOSUCHCHANNEL(usr, params.front());
-		if (params.size() == 1) // if only 1 parameter, that means the mode is not modified
+		if (params.size() == 1)
 			return CHANNELMODEIS(usr, usr.nickname(), params.front(), ((*chan_it).is_invite_only() ? ":+int" : ":+nt"));
-		if (!(*chan_it).is_op(usr)) //if a mode is specified, user must be operator
+		if (!(*chan_it).is_op(usr))
 			return CHANOPRIVSNEEDED(usr, params.front());
 		std::string	flag = at(params, 1);
 		if (flag == "+i" && !(*chan_it).is_invite_only())
 			(*chan_it).invite_only(true);
 		else if (flag == "-i" && (*chan_it).is_invite_only())
 			(*chan_it).invite_only(false);
-		else // ignoring other cases
+		else
 			return 0;
 		message	m(usr.to_prefix(), "MODE");
 		m.add_params((*chan_it).name());
@@ -210,14 +236,32 @@ int	server::mode_cmd(user& usr, std::list<std::string> params)
 //KICK
 int	server::kick_cmd(user& asskicker, std::list<std::string> list_param) 
 {
+	if (list_param.size() == 1 && list_param.front().size() == 0)
+		NEEDMOREPARAMS(asskicker, "KICK");
+
 	std::string	buff = at(list_param, 1);
 	std::vector<std::string> list_user = split_comma(buff);
+	std::string comment;
+
+	if (list_param.size() > 2)
+	{
+		std::list<std::string>::iterator	b_c = list_param.begin();	
+		std::list<std::string>::iterator	e_c = list_param.end();	
+		b_c++;
+		b_c++;
+		comment = *b_c;
+		for (; b_c != e_c; b_c++)
+		{
+			comment += " ";
+			comment += *b_c;
+		}
+	}
 
 	std::vector<std::string>::iterator	b = list_user.begin();
 	std::vector<std::string>::iterator	e = list_user.end();
 	for (; b != e; b++)
 	{
-		kick_each_user(asskicker, b,list_param);
+		kick_each_user(asskicker, b, list_param, comment);
 	}
 	return (0);
 }
@@ -235,6 +279,8 @@ int	server::ping_cmd(user& usr)
 //JOIN
 int	server::join_cmd(user& usr, std::list<std::string> list_param)
 {
+	if (list_param.size() == 1 && list_param.front().size() == 0)
+		return (BADCHANMASK(usr, ""));
 	std::string buff = list_param.front();
 	std::vector<std::string> list_chan = split_comma(buff);
 
@@ -248,8 +294,10 @@ int	server::join_cmd(user& usr, std::list<std::string> list_param)
 //WHO
 int	server::who_cmd(user& usr, std::list<std::string> list_param)
 {
-	std::string	cible = list_param.front();
+	if (list_param.size() == 1 && list_param.front().size() == 0)
+		return (NEEDMOREPARAMS(usr, "WHO"));
 
+	std::string	cible = list_param.front();
 	if (cible[0] == '#')
 	{
 		chan_iterator bch = search_channel(cible);
@@ -313,6 +361,9 @@ int	server::privmsg_cmd(user& sender, std::list<std::string> list_param, std::st
 //PART
 int	server::part_cmd(user& usr, std::list<std::string> list_param)
 {
+	if (list_param.size() == 1 && list_param.front().size() == 0)
+		return (NOSUCHCHANNEL(usr, "*"));
+
 	std::string	buff = list_param.front();
 
 	std::vector<std::string> list_chan = split_comma(buff);
@@ -328,7 +379,6 @@ int	server::part_cmd(user& usr, std::list<std::string> list_param)
 //QUIT
 int	server::quit_cmd(user& usr, std::list<std::string> list_param)
 {
-	std::cout << "///" <<fd_buffer[usr.getfd()] << "///" << std::endl;
 	extern fd_set set;
 	user_iterator	uit = this->search_user(usr.nickname());
 	message	m(usr.to_prefix(), "QUIT");
@@ -357,6 +407,9 @@ int	server::quit_cmd(user& usr, std::list<std::string> list_param)
 //INVITE
 int	server::invite_cmd(user& usr, std::list<std::string> list_param)
 {
+	if (list_param.size() == 1 && list_param.front().size() == 0)
+		return (RPL_ENDOFINVITELIST(usr));
+
 	std::string	chan_name	= at(list_param, 1);
 	user_iterator target	= this->search_user(list_param.front());
 	chan_iterator chan		= this->search_channel(chan_name);
@@ -374,7 +427,6 @@ int	server::invite_cmd(user& usr, std::list<std::string> list_param)
 	(*chan).add_to_invite_list(&(*target));
 
 	{
-		// REPLY INVITING	
 		message msg("irc.local", "341");
 		msg.add_params(usr.nickname());
 		msg.add_params((*target).nickname());
@@ -383,7 +435,6 @@ int	server::invite_cmd(user& usr, std::list<std::string> list_param)
 	}
 
 	{
-		// INFORM TARGET
 		message msg(usr.to_prefix(), "INVITE");
 		msg.add_params((*target).nickname());
 		msg.add_params((*chan).name());
@@ -391,7 +442,6 @@ int	server::invite_cmd(user& usr, std::list<std::string> list_param)
 	}
 
 	{
-		// NOTIFY CHANNEL
 		message msg("irc.local", "NOTICE");
 		msg.add_params((*chan).name());
 		std::string	text = usr.nickname() + " invited " + (*target).nickname() + " into the channel";

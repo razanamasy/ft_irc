@@ -7,7 +7,6 @@ SRCS	:=	main.cpp		\
 			commands.cpp	\
 			replies.cpp		\
 			message.cpp		\
-			display.cpp
 
 OBJS	=	${SRCS:.cpp=.o}
 

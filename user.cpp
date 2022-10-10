@@ -16,8 +16,8 @@ std::string	to_lower_string(std::string str)
 	return res;
 }
 
-//getters
-std::string	user::nickname() const	{ return _nickname; };
+//GETTERS
+std::string	user::nickname() const	{return _nickname; };
 std::string	user::username() const	{ return _username; };
 std::string	user::hostname() const	{ return _hostname; };
 std::string	user::realname() const	{ return _realname; };
@@ -33,9 +33,11 @@ channel*		user::get_last_channel() const
 };
 
 std::list<channel*>&	user::get_channels()
-{ return _channel; }
+{
+	return _channel;
+}
 
-//setter
+//SETTERS
 void	user::nickname(const std::string& nick)		{ _nickname = nick; };
 void	user::username(const std::string& usr)		{ _username = usr; };
 void	user::realname(const std::string& real)		{ _realname = real; };
@@ -47,7 +49,10 @@ std::string	user::to_prefix() const
 	return res;
 }
 
-bool	user::can_join_a_channel() const	{ return in_channels < MAX_CHANNEL_PER_USER; }
+bool	user::can_join_a_channel() const
+{
+	return in_channels < MAX_CHANNEL_PER_USER;
+}
 
 bool	user::add_a_chan(channel *newChan)
 {
@@ -55,7 +60,6 @@ bool	user::add_a_chan(channel *newChan)
 		return false;
 	in_channels += 1;
 	this->_channel.push_back(newChan);
-	//send_a_string(raw_join_messages);
 	return true;
 }
 
@@ -85,17 +89,24 @@ user::user(const int fd, std::string hn): fd_user(fd), _hostname(hn)
 	passed = false;
 }
 
-bool	user::is_passed() { return passed; }
+bool	user::is_passed()
+{
+	return passed;
+}
 
-void	user::pass() { passed = true; }
+void	user::pass() 
+{
+	passed = true;
+}
 
 user::~user()
 {
-
 }
 
 void	user::add_to_buffer(message msg)
-{ buffer += msg.raw(); }
+{
+	buffer += msg.raw();
+}
 
 void	user::send_buffer()
 {
@@ -106,13 +117,19 @@ void	user::send_buffer()
 }
 
 bool	user::operator==(const user& usr) const
-{ return (to_lower_string(_nickname) == to_lower_string(usr.nickname())); }
+{
+	return (to_lower_string(_nickname) == to_lower_string(usr.nickname()));
+}
 
 bool	user::operator!=(const user& usr) const
-{ return (_nickname != usr.nickname()); }
+{
+	return (_nickname != usr.nickname());
+}
 
 void	user::send_a_message(message& m) const
-{ this->send_a_string(m.raw()); }
+{
+	this->send_a_string(m.raw());
+}
 
 void	user::send_a_string(const std::string& m) const
 {

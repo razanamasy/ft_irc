@@ -28,7 +28,6 @@ class	server
 		size_t						nbr_of_channels;
 		int							port;
 		std::string					key;
-		std::string					hash;
 		struct sockaddr_in			addr_client;
 		std::map<int, std::string>	fd_buffer;
 		
@@ -49,7 +48,6 @@ class	server
 
 		server(int port);
 		std::string getkey() const ;
-		std::string gethash() const ;
 
 		~server();
 
@@ -59,7 +57,6 @@ class	server
 		size_t	number_of_channels()	const ;
 
 		void setkey(std::string key);
-		void sethash(std::string hash);
 
 		std::list<user>&	Users();
 		std::list<channel>&	channels();
@@ -91,7 +88,7 @@ class	server
 		void	set_up_messages(message& m, std::string chan_name, chan_iterator& chan, user& usr);
 
 		//UTILS FOR OTHER COMMANDS
-		void	kick_each_user(user& asskicker, std::vector<std::string>::iterator b, std::list<std::string> list_param);
+		void	kick_each_user(user& asskicker, std::vector<std::string>::iterator b, std::list<std::string> list_param, std::string comment);
 		void	part_each_channel(user& usr, std::vector<std::string>::iterator	b, std::list<std::string> list_param);
 		void	msg_each_receivers(user& sender, std::vector<std::string>::iterator b,
 			       std::list<std::string> list_param, std::string cmd_name);
@@ -150,11 +147,8 @@ class	server
 		void	quit(user& usr, std::string msg);
 		void	pong(user& usr);
 
-		//CRYPTO
-		void    generate_key(size_t len);
-		void    cipher_password(std::string password);
-		std::string cipher_test_password(std::string password, std::string key);
-		bool    password_match(std::string candidate, std::string hash, std::string key);
+		//PASSWORD
+		bool    password_match(std::string candidate, std::string key);
 
 		class SocketError : public std::exception
 		{
@@ -165,9 +159,5 @@ class	server
 			}
 		};
 };
-
-std::ostream&	operator<<(std::ostream& o, channel& chan);
-std::ostream&	operator<<(std::ostream& o, user& usr);
-std::ostream&	operator<<(std::ostream& o, server& serv);
 
 #endif

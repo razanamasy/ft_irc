@@ -34,7 +34,6 @@ int	server::fill_channel(user& usr, std::string chan_name, chan_iterator& chan)
 
 void	server::set_up_messages(message& m, std::string chan_name, chan_iterator& chan, user& usr)
 {
-	//set message for current user
 	m.add_params(chan_name);
 	usr.add_to_buffer(m);
 
@@ -65,7 +64,7 @@ int	server::join_each_channel(user& usr, std::string chan_name)
 		return 1;
 	if (chan_name[0] != '#')
 		return BADCHANMASK(usr, chan_name);
-	if (!usr.can_join_a_channel())
+	if ((!usr.can_join_a_channel()))
 		return TOOMANYCHANNELS(usr, chan_name);
 	chan_iterator	chan;
 	if (!this->channel_exists(chan_name) && (nbr_of_channels < MAX_CHANNEL))
@@ -74,6 +73,8 @@ int	server::join_each_channel(user& usr, std::string chan_name)
 	}
 	else
 	{
+		if (nbr_of_channels == MAX_CHANNEL && !this->channel_exists(chan_name))
+			return TOOMANYCHANNELS(usr, chan_name);
 		if (fill_channel(usr, chan_name, chan))
 			return (0);
 	}
@@ -85,7 +86,7 @@ int	server::join_each_channel(user& usr, std::string chan_name)
 }
 
 //KICK
-void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator b, std::list<std::string> list_param)
+void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator b, std::list<std::string> list_param, std::string comment)
 {
 	server::user_iterator asskicked = this->search_user(*b);
 	server::chan_iterator chan		= this->search_channel(at(list_param, 0));
@@ -108,8 +109,8 @@ void	server::kick_each_user(user& asskicker, std::vector<std::string>::iterator 
 				message msg((asskicker).to_prefix(), "KICK");
 				msg.add_params((*chan).name());
 				msg.add_params((*asskicked).nickname());
-				if (list_param.size() == 3)
-					msg.add_params(at(list_param, 2));
+				if (comment.size() > 0)
+					msg.add_params(comment);
 				(*asskicked).send_a_message(msg);
 				(*chan).send_a_message(msg, *asskicked);
 				this->pop_user_from_chan(*asskicked, chan);
@@ -158,7 +159,6 @@ void	server::part_each_channel(user& usr, std::vector<std::string>::iterator	b, 
 //PRIVMSG
 void	server::msg_each_receivers(user& sender, std::vector<std::string>::iterator	b, std::list<std::string> list_param, std::string cmd_name)
 {
-		//COEUR DE FOR A SORTIR
 		message	m(sender.to_prefix(), cmd_name);
 		m.add_params((*b));
 		std::list<std::string>::iterator b_param = list_param.begin();

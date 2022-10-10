@@ -13,36 +13,47 @@ server::server(int port)
 	ft_bzero((char*)&addr_client, sizeof(addr_client));
 }
 
-std::string server::getkey() const {return this->key;}
-std::string server::gethash() const {return this->hash;}
+std::string server::getkey() const 
+{
+	return this->key;
+}
 
 server::~server(){}
 
 // ACCESSORS
+size_t	server::number_of_users()		const 
+{
+	return nbr_of_users;
+}
+size_t	server::number_of_channels()	const
+{
+	return nbr_of_channels;
+}
+void server::setkey(std::string key) 
+{
+	this->key = key; return ;
+}
 
-size_t	server::number_of_users()		const { return nbr_of_users; }
-size_t	server::number_of_channels()	const { return nbr_of_channels; }
-
-void server::setkey(std::string key) {this->key = key; return ;}
-void server::sethash(std::string hash) {this->hash = hash; return ;}
-
-std::list<user>&	server::Users()		{ return _users; }
-std::list<channel>&	server::channels()	{ return _channels; }
+std::list<user>&	server::Users()	
+{
+	return _users;
+}
+std::list<channel>&	server::channels()	
+{
+	return _channels;
+}
 
 // CHANS
-
 void	server::add_channel(channel& chan)
 {
 	_channels.push_back(chan);
 	nbr_of_channels++;
 }
-
 void	server::remove_channel(server::chan_iterator chan)
 {
 	_channels.erase(chan);
 	nbr_of_channels--;
 }
-
 void	server::pop_user_from_chan(user& usr, chan_iterator it_chan)
 {
 	(*it_chan).remove_user(usr);
@@ -50,7 +61,6 @@ void	server::pop_user_from_chan(user& usr, chan_iterator it_chan)
 	if ((*it_chan).is_empty())
 		remove_channel(it_chan);
 }
-
 server::chan_iterator	server::search_channel(std::string name)
 {
 	server::chan_iterator	b = _channels.begin();
@@ -63,12 +73,12 @@ server::chan_iterator	server::search_channel(std::string name)
 	}
 	return b;
 }
-
 bool	server::channel_exists(std::string name)
-{ return (search_channel(name) != _channels.end()); }
+{
+	return (search_channel(name) != _channels.end());
+}
 
 // USERS
-
 void	server::add_user(const user& usr)
 {
 	_users.push_front(usr);
@@ -101,7 +111,6 @@ void	server::remove_user(user_iterator ui)
 		chan_to_destroy.pop_front();
 	}
 }
-
 server::user_iterator	server::search_user(const std::string& nick)
 {
 	server::user_iterator	b = _users.begin();
@@ -114,7 +123,6 @@ server::user_iterator	server::search_user(const std::string& nick)
 	}
 	return b;
 }
-
 server::user_iterator server::get_user_by_fd(int fd)
 {
 	for (std::list<user>::iterator it = this->_users.begin() ; it != this->_users.end() ; it++)
@@ -126,7 +134,6 @@ server::user_iterator server::get_user_by_fd(int fd)
 	}
 	return (this->_users.end());
 }
-
 bool	server::is_ip_already_here(std::string ip)
 {
 	if (!nbr_of_users)
@@ -141,61 +148,21 @@ bool	server::is_ip_already_here(std::string ip)
 	}
 	return false;
 }
-
 bool	server::user_exists(const std::string& nick)
-{ return (search_user(nick) != _users.end()); }
+{
+	return (search_user(nick) != _users.end());
+}
 
 bool	server::user_exists(const int sockfd)
-{ return (get_user_by_fd(sockfd) != _users.end()); }
-
-// CRYPTO
-
-void	server::generate_key(size_t len)
 {
-	srand(time(NULL));
-	std::string    res;
-	char    c;
-	size_t    sz = 32;
-	while (sz < len)
-		sz *= 2;
-	for (size_t i = 0; i < sz; i++)
-	{
-		c = rand() % 128;
-		res += c;
-	}
-	this->key = res;
+	return (get_user_by_fd(sockfd) != _users.end());
 }
 
-void	server::cipher_password(std::string password)
+// PASSWORD
+bool	server::password_match(std::string candidate, std::string key)
 {
-	std::string    res;
-	std::string		key = this->key;
-
-	for (size_t i = 0; i < key.length(); i++)
-	{
-		if (i >= password.length())
-    		res += key[i];
-		else
-    		res += (password[i] + key[i]) % 128;
-	}
-	this->hash = res;
+	return (candidate == key);
 }
-
-std::string	server::cipher_test_password(std::string password, std::string key)
-{
-	std::string    res;
-	for (size_t i = 0; i < key.length(); i++)
-	{
-		if (i >= password.length())
-			res += key[i];
-		else
-			res += (password[i] + key[i]) % 128;
-	}
-	return (res);
-}
-
-bool	server::password_match(std::string candidate, std::string hash, std::string key)
-{ return (cipher_test_password(candidate, key) == hash); }
 
 void	server::load_local_serv_ip(sockaddr_in & addr, int port)
 {
@@ -267,7 +234,7 @@ bool	uncorrect_params(user &usr, message & msg, size_t nb)
 	nbp = msg.getparams().size();
 
 	if (nbp == 1 && msg.getparams().front().size() == 0)
-		nbp = 0;
+		return (false);
 
 	if (nbp < nb)
 	{
@@ -280,9 +247,7 @@ bool	uncorrect_params(user &usr, message & msg, size_t nb)
 
 int	server::manage(int fd, message msg)
 {
-	std::cout	<< "//////// RECU ////////" << std::endl
-				<< msg
-				<< "//////////////////////" << std::endl;
+
 	server::user_iterator	usr = get_user_by_fd(fd);
 	int	command_id = identify_command(msg.command());
 	if ((*usr).username().empty() && command_id > 2)
@@ -436,10 +401,8 @@ int server::parcing_manage_request(int fdcur)
 						
 				if (manage(fdcur, msg) == 1)
 				{
-					std::cout << *this;
 					return (1);
 				}
-				std::cout << *this;
 			}
 			else
 			{
@@ -447,10 +410,8 @@ int server::parcing_manage_request(int fdcur)
 				fd_buffer[fdcur] = fd_buffer[fdcur].substr(b + 1);
 				if (manage(fdcur, msg) == 1)
 				{
-					std::cout << *this;
 					return (1);
 				}
-				std::cout << *this;
 			}
 		}
 	return (0);
